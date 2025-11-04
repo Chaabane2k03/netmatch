@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,7 +17,15 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   _navigateToHome() async {
-    await Future.delayed(const Duration(seconds: 5)); // Duration of splash
+    // Small delay to ensure Lottie is loaded
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Remove native splash after Lottie is ready
+    FlutterNativeSplash.remove();
+
+    // Wait for animation to complete
+    await Future.delayed(const Duration(seconds: 5));
+
     if (mounted) {
       Navigator.pushReplacementNamed(context, '/home');
     }
@@ -25,13 +34,18 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Set your preferred background color
+      backgroundColor: Colors.black,
       body: Center(
         child: Lottie.asset(
           'assets/animations/cinema.json',
           width: 300,
           height: 300,
           fit: BoxFit.contain,
+          // Optional: callback when animation loads
+          onLoaded: (composition) {
+            // Animation is loaded
+            print('Lottie animation loaded');
+          },
         ),
       ),
     );
