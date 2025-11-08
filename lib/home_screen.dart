@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:netmatch/auth/LoginScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -290,18 +291,6 @@ class MainScreen extends StatelessWidget {
 
     //Return the Widget of SignUp or Login
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text('Netflix Clone'),
-      ),
-      body: const Center(
-        child: Text(
-          'Bienvenue !',
-          style: TextStyle(color: Colors.white, fontSize: 24),
-        ),
-      ),
-    );
+    return LoginScreen();
   }
 }

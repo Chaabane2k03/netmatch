@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "554383408377",
+    "project_id": "netmatch-dc82e",
+    "storage_bucket": "netmatch-dc82e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:554383408377:android:bee891be8749295173f628",
+        "android_client_info": {
+          "package_name": "com.example.netmatch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDwyxUyX2EenA1asF0YXyj6bfBSulybR3g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
