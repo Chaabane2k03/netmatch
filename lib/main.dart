@@ -17,12 +17,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Your App',
+      title: 'NetMatch',
       debugShowCheckedModeBanner: false,
-      initialRoute: '/',
+      home: const SplashScreen(),
       routes: {
-        '/': (context) => const SplashScreen(),
-        '/home': (context) => HomeScreen(),
+        '/home': (context) => const HomeScreen(),
       },
     );
   }

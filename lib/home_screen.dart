@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _OnboardingScreenState();
@@ -287,6 +287,9 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    //Return the Widget of SignUp or Login
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(

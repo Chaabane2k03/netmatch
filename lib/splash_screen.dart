@@ -10,17 +10,17 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _animationCompleted = false;
+
   @override
   void initState() {
     super.initState();
-    _navigateToHome();
+    _initializeApp();
   }
 
-  _navigateToHome() async {
-    // Small delay to ensure Lottie is loaded
+  void _initializeApp() async {
+    // Remove native splash screen
     await Future.delayed(const Duration(milliseconds: 100));
-
-    // Remove native splash after Lottie is ready
     FlutterNativeSplash.remove();
 
     // Wait for animation to complete
@@ -29,6 +29,12 @@ class _SplashScreenState extends State<SplashScreen> {
     if (mounted) {
       Navigator.pushReplacementNamed(context, '/home');
     }
+  }
+
+  @override
+  void dispose() {
+    // Clean up any pending operations
+    super.dispose();
   }
 
   @override
@@ -41,11 +47,6 @@ class _SplashScreenState extends State<SplashScreen> {
           width: 300,
           height: 300,
           fit: BoxFit.contain,
-          // Optional: callback when animation loads
-          onLoaded: (composition) {
-            // Animation is loaded
-            print('Lottie animation loaded');
-          },
         ),
       ),
     );
