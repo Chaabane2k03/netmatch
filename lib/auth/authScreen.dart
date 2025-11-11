@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:netmatch/auth/registerScreen.dart';
 import 'package:video_player/video_player.dart';
 
 class LoginPage extends StatefulWidget {
@@ -15,16 +16,15 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    // Replace with your video URL or asset path
     _controller = VideoPlayerController.asset('assets/videos/video.mp4')
-    ..initialize().then((_) {
-      setState(() {
-        _isVideoInitialized = true;
+      ..initialize().then((_) {
+        setState(() {
+          _isVideoInitialized = true;
+        });
+        _controller.play();
+        _controller.setLooping(true);
+        _controller.setVolume(0);
       });
-      _controller.play();
-      _controller.setLooping(true);
-      _controller.setVolume(0);
-    });
   }
 
   @override
@@ -36,19 +36,12 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(0.3),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Image.asset(
-            'assets/logos/logo.png',
-            width: 180,
-            height: 180,
-            fit: BoxFit.contain,
-          ),
-        ),
+        // Remove the logo from here
       ),
       body: Stack(
         children: [
@@ -64,9 +57,25 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-          // Dark overlay
+          // Netflix-style gradient overlay
           Container(
-            color: Colors.black.withOpacity(0.4),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black87,
+                  Colors.transparent,
+                  Colors.transparent,
+                  Colors.black87,
+                ],
+                stops: [0.0, 0.3, 0.7, 1.0],
+              ),
+            ),
+          ),
+          // Additional dark overlay for better text readability
+          Container(
+            color: Colors.black.withOpacity(0.6),
           ),
           // Content
           SafeArea(
@@ -77,89 +86,93 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Welcome Text
+                      // Big Logo - Now you can control the size properly
+                      Image.asset(
+                        'assets/logos/logo.png',
+                        width: 200, // Much bigger now
+                        height: 200, // Adjust as needed
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 30),
+                      // Welcome Text - Netflix style
                       const Text(
                         'Welcome',
                         style: TextStyle(
                           fontSize: 48,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w900,
                           color: Colors.white,
+                          letterSpacing: 1.5,
                         ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Join us today and discover amazing features',
+                        'Discover movies, Find your interests and match it with people with same interests',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 18,
                           color: Colors.white70,
+                          fontWeight: FontWeight.w300,
                         ),
                       ),
                       const SizedBox(height: 60),
-                      // Sign Up Button
+                      // Sign Up Button - Netflix red
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
                           onPressed: () {
-                            // Navigate to sign up page
-                            // Navigator.push(
-                            //   context,
-                            //   MaterialPageRoute(builder: (context) => SignUpPage()),
-                            // );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Navigate to Sign Up'),
-                              ),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => SignUpPage()),
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: const Color(0xFFE50914),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(4),
                             ),
-                            elevation: 5,
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
                           ),
                           child: const Text(
                             'Sign Up',
                             style: TextStyle(
                               fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.0,
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Sign In Button
+                      // Sign In Button - Netflix dark gray
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: OutlinedButton(
                           onPressed: () {
-                            // Navigate to sign in page
-                            // Navigator.push(
-                            //   context,
-                            //   MaterialPageRoute(builder: (context) => SignInPage()),
-                            // );
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Navigate to Sign In'),
+                                backgroundColor: Color(0xFFE50914),
                               ),
                             );
                           },
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
-                            side: const BorderSide(color: Colors.white, width: 2),
+                            backgroundColor: Colors.black.withOpacity(0.7),
+                            side: const BorderSide(color: Colors.grey, width: 1.5),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(4),
                             ),
                           ),
                           child: const Text(
                             'Sign In',
                             style: TextStyle(
                               fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.0,
                             ),
                           ),
                         ),
@@ -172,6 +185,7 @@ class _LoginPageState extends State<LoginPage> {
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.white60,
+                          fontWeight: FontWeight.w300,
                         ),
                       ),
                     ],
