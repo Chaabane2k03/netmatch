@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:netmatch/auth/registerScreen.dart';
 import 'package:video_player/video_player.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+import 'loginScreen.dart';
+
+class Authscreen extends StatefulWidget {
+  const Authscreen({Key? key}) : super(key: key);
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<Authscreen> createState() => _AuthScreenState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _AuthScreenState extends State<Authscreen> {
   late VideoPlayerController _controller;
   bool _isVideoInitialized = false;
 
@@ -152,11 +154,9 @@ class _LoginPageState extends State<LoginPage> {
                         height: 56,
                         child: OutlinedButton(
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Navigate to Sign In'),
-                                backgroundColor: Color(0xFFE50914),
-                              ),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => LoginPage()),
                             );
                           },
                           style: OutlinedButton.styleFrom(

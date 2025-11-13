@@ -290,6 +290,6 @@ class MainScreen extends StatelessWidget {
   Widget build(BuildContext context) {
 
     //Return the Widget of SignUp or Login
-    return LoginPage();
+    return Authscreen();
   }
 }

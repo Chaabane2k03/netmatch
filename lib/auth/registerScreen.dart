@@ -1,12 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -56,19 +55,9 @@ class _SignUpPageState extends State<SignUpPage> {
     'Biography'
   ];
 
-  // Improved Image picking method
+  // Image picking method
   Future<void> _pickImage() async {
-    if (_isPickingImage) return; // Prevent multiple simultaneous picks
-
-    if (kIsWeb) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Image upload is not supported on web yet. Please use the mobile app.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
+    if (_isPickingImage) return;
 
     setState(() {
       _isPickingImage = true;
@@ -78,9 +67,9 @@ class _SignUpPageState extends State<SignUpPage> {
       final picker = ImagePicker();
       final XFile? pickedFile = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 800, // Limit image size
+        maxWidth: 800,
         maxHeight: 800,
-        imageQuality: 80, // Compress image
+        imageQuality: 80,
       ).timeout(const Duration(seconds: 30), onTimeout: () {
         throw TimeoutException('Image selection timed out');
       });
@@ -88,7 +77,7 @@ class _SignUpPageState extends State<SignUpPage> {
       if (pickedFile != null && mounted) {
         final file = File(pickedFile.path);
 
-        // Check file size (optional - limit to 5MB)
+        // Check file size (limit to 5MB)
         final fileSize = await file.length();
         if (fileSize > 5 * 1024 * 1024) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -132,7 +121,7 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
-  // Alternative: Use Camera with better resource management
+  // Take photo with camera
   Future<void> _takePhoto() async {
     if (_isPickingImage) return;
 
@@ -172,6 +161,18 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
+  // Convert image to Base64
+  Future<String?> _convertImageToBase64(File image) async {
+    try {
+      final bytes = await image.readAsBytes();
+      final base64String = base64Encode(bytes);
+      return base64String;
+    } catch (e) {
+      debugPrint('Error converting image to Base64: $e');
+      return null;
+    }
+  }
+
   // Sign up method
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
@@ -198,13 +199,10 @@ class _SignUpPageState extends State<SignUpPage> {
         password: _passwordController.text.trim(),
       );
 
-      // Upload image to Firebase Storage
-      String? profileImageUrl;
-      if (_profileImage != null && !kIsWeb) {
-        profileImageUrl = await _uploadImage(_profileImage!);
-      } else if (kIsWeb) {
-        // Use placeholder for web
-        profileImageUrl = 'https://via.placeholder.com/150/000000/FFFFFF/?text=Profile';
+      // Convert image to Base64
+      String? profileImageBase64;
+      if (_profileImage != null) {
+        profileImageBase64 = await _convertImageToBase64(_profileImage!);
       }
 
       // Store user data in Firestore
@@ -214,7 +212,7 @@ class _SignUpPageState extends State<SignUpPage> {
         'fullName': _fullNameController.text.trim(),
         'age': int.parse(_ageController.text.trim()),
         'moviePreferences': _selectedPreferences,
-        'profileImageUrl': profileImageUrl,
+        'profileImageBase64': profileImageBase64,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -267,26 +265,6 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
-  // Image upload method
-  Future<String> _uploadImage(File image) async {
-    try {
-      final storage = FirebaseStorage.instance;
-      final ref = storage
-          .ref()
-          .child('profile_images')
-          .child('${_auth.currentUser!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-
-      final uploadTask = ref.putFile(image);
-      final snapshot = await uploadTask.whenComplete(() {});
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-
-      return downloadUrl;
-    } catch (e) {
-      debugPrint('Error uploading image: $e');
-      return 'https://via.placeholder.com/150/000000/FFFFFF/?text=Profile';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -315,7 +293,7 @@ class _SignUpPageState extends State<SignUpPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Profile Image Picker with improved UI
+                  // Profile Image Picker
                   Column(
                     children: [
                       GestureDetector(
@@ -350,48 +328,30 @@ class _SignUpPageState extends State<SignUpPage> {
                                   ),
                                 ),
                               ),
-                            if (kIsWeb)
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.orange,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.info,
-                                    size: 16,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // Image source options (only show on mobile)
-                      if (!kIsWeb)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            TextButton(
-                              onPressed: _isLoading || _isPickingImage ? null : _pickImage,
-                              child: const Text(
-                                'Gallery',
-                                style: TextStyle(color: Colors.white70),
-                              ),
+                      // Image source options
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: _isLoading || _isPickingImage ? null : _pickImage,
+                            child: const Text(
+                              'Gallery',
+                              style: TextStyle(color: Colors.white70),
                             ),
-                            TextButton(
-                              onPressed: _isLoading || _isPickingImage ? null : _takePhoto,
-                              child: const Text(
-                                'Camera',
-                                style: TextStyle(color: Colors.white70),
-                              ),
+                          ),
+                          TextButton(
+                            onPressed: _isLoading || _isPickingImage ? null : _takePhoto,
+                            child: const Text(
+                              'Camera',
+                              style: TextStyle(color: Colors.white70),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
 
@@ -638,15 +598,11 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   void dispose() {
-    // Clean up controllers
     _emailController.dispose();
     _passwordController.dispose();
     _fullNameController.dispose();
     _ageController.dispose();
-
-    // Force garbage collection of image file if needed
     _profileImage = null;
-
     super.dispose();
   }
 }
