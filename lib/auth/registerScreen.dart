@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:netmatch/auth/loginScreen.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -213,6 +214,7 @@ class _SignUpPageState extends State<SignUpPage> {
         'age': int.parse(_ageController.text.trim()),
         'moviePreferences': _selectedPreferences,
         'profileImageBase64': profileImageBase64,
+        'role' : 'user',
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -224,7 +226,7 @@ class _SignUpPageState extends State<SignUpPage> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context);
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'An error occurred. Please try again.';
