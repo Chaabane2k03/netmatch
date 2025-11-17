@@ -7,6 +7,10 @@ import 'dart:convert';
 
 import 'package:netmatch/profile/fields/edit_password.dart';
 
+import 'fields/edit_avatar.dart';
+import 'fields/about_us.dart';
+import 'fields/edit_preferences.dart';
+
 class MyAccountPage extends StatelessWidget {
   const MyAccountPage({super.key});
 
@@ -69,13 +73,17 @@ class MyAccountPage extends StatelessWidget {
                     backgroundImage: userData['profileImageBase64'] != null
                         ? MemoryImage(_decodeBase64(userData['profileImageBase64']))
                         : null,
+                    backgroundColor: Colors.grey[800],
                     child: userData['profileImageBase64'] == null
                         ? const Icon(Icons.person, size: 30, color: Colors.white)
                         : null,
-                    backgroundColor: Colors.grey[800],
                   ),
                   onTap: () {
                     // Navigate to avatar selection
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ChangeAvatarPage())
+                    );
                   },
                 ),
 
@@ -93,9 +101,6 @@ class MyAccountPage extends StatelessWidget {
                 AccountListTile(
                   title: 'Email',
                   subtitle: userData['email'] ?? user?.email ?? 'N/A',
-                  onTap: () {
-                    // Navigate to email edit
-                  },
                 ),
 
                 // Movie Preferences Section
@@ -106,6 +111,9 @@ class MyAccountPage extends StatelessWidget {
                       : 'Not set',
                   onTap: () {
                     // Navigate to movie preferences
+                    Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => const MoviePreferencesPage())
+                    );
                   },
                 ),
 
@@ -117,6 +125,17 @@ class MyAccountPage extends StatelessWidget {
                     Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => ChangePasswordPage())
+                    );
+                  },
+                ),
+
+                AccountListTile(
+                  title: 'About Us',
+                  onTap: () {
+                    // Navigate to account security
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AboutUsPage())
                     );
                   },
                 ),
