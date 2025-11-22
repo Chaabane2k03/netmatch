@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:netmatch/movies/explorePage.dart';
+import 'package:netmatch/movies/profilePage.dart';
+import 'package:netmatch/movies/savedPage.dart';
 import 'dart:convert';
+
+import 'package:netmatch/movies/widgets/bottom_nav_bar.dart';
+import 'package:netmatch/profile/edit_profile.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -11,6 +17,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  int botIndex = 0 ;
   List<dynamic> trendingMovies = [];
   List<dynamic> topRatedMovies = [];
   List<dynamic> popularMovies = [];
@@ -22,7 +29,6 @@ class _HomePageState extends State<HomePage> {
     fetchMovies();
   }
 
-  // Your RapidAPI key
   Future<void> fetchMovies() async {
     const apiKey = '085d820d8emshce483d7a1ac0906p11989ajsn9f0c6d6465fd';
     const apiHost = 'imdb236.p.rapidapi.com';
@@ -89,14 +95,10 @@ class _HomePageState extends State<HomePage> {
       setState(() => isLoading = false);
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: isLoading
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFC107)))
-            : CustomScrollView(
+  Widget _buildPageContent() {
+    switch (botIndex) {
+      case 0:
+        return CustomScrollView(
           slivers: [
             // App Bar
             SliverAppBar(
@@ -105,14 +107,15 @@ class _HomePageState extends State<HomePage> {
               elevation: 0,
               title: Row(
                 children: [
-                  Icon(Icons.play_arrow, color: Colors.amber[700], size: 28),
+                  Icon(Icons.play_arrow, color: Colors.red, size: 28),
                   const SizedBox(width: 8),
                   const Text(
-                    'CineMax',
+                    'NetMatch',
                     style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1,
+                        color : Colors.white
                     ),
                   ),
                 ],
@@ -178,9 +181,10 @@ class _HomePageState extends State<HomePage> {
             ),
 
             // Trending Now
-            SliverToBoxAdapter(
+            /*SliverToBoxAdapter(
               child: _buildSectionTitle('Trending Now'),
             ),
+
             SliverToBoxAdapter(
               child: SizedBox(
                 height: 260,
@@ -193,10 +197,11 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
-            ),
+            ),*/
 
             // Top Rated
-            SliverToBoxAdapter(
+
+            /*SliverToBoxAdapter(
               child: _buildSectionTitle('Top Rated'),
             ),
             SliverToBoxAdapter(
@@ -212,12 +217,34 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-
+            */
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNavBar(),
+        );
+
+      case 1:
+        return const ExplorePage();
+      case 2:
+        return const SavedPage();
+      case 3:
+        return const MyAccountPage();
+      default:
+        return const SizedBox();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator(color: Colors.red))
+            :_buildPageContent()),
+      bottomNavigationBar: BottomNavBar(currentIndex: botIndex, onTap: (index){
+        setState(() {
+          botIndex = index ;
+        });
+      }),
     );
   }
 
@@ -229,10 +256,10 @@ class _HomePageState extends State<HomePage> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFFC107) : Colors.transparent,
+          color: isSelected ?  Colors.red : Colors.black,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFFC107) : Colors.grey[800]!,
+            color: isSelected ? Colors.red : Colors.grey[800]!,
           ),
         ),
         child: Center(
@@ -314,7 +341,7 @@ class _HomePageState extends State<HomePage> {
                   icon: const Icon(Icons.play_arrow, color: Colors.black),
                   label: const Text('Watch Now', style: TextStyle(color: Colors.black)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFC107),
+                    backgroundColor: Colors.red ,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -339,14 +366,14 @@ class _HomePageState extends State<HomePage> {
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Colors.black,
             ),
           ),
           TextButton(
             onPressed: () {},
             child: const Text(
               'See all',
-              style: TextStyle(color: Color(0xFFFFC107)),
+              style: TextStyle(color: Colors.red ),
             ),
           ),
         ],
@@ -417,7 +444,7 @@ class _HomePageState extends State<HomePage> {
                     widthFactor: progress,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFC107),
+                        color: Colors.red ,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -497,7 +524,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
+                        const Icon(Icons.star, color: Colors.red , size: 14),
                         const SizedBox(width: 4),
                         Text(
                           rating,
@@ -537,7 +564,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildBottomNavBar() {
+  /*Widget _buildBottomNavBar() {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
@@ -564,7 +591,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-  }
+  }*/
 
   Widget _buildNavItem(IconData icon, String label, bool isSelected) {
     return Column(
@@ -572,14 +599,14 @@ class _HomePageState extends State<HomePage> {
       children: [
         Icon(
           icon,
-          color: isSelected ? const Color(0xFFFFC107) : Colors.grey[600],
+          color: isSelected ? Colors.red  : Colors.grey[600],
           size: 28,
         ),
         const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
-            color: isSelected ? const Color(0xFFFFC107) : Colors.grey[600],
+            color: isSelected ? Colors.red  : Colors.grey[600],
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
