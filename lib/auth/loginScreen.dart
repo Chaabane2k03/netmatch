@@ -3,7 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:netmatch/auth/registerScreen.dart';
 import 'package:netmatch/errors/bannedScreen.dart';
-import 'package:netmatch/profile/edit_profile.dart';
+
+import '../admin/widgets/bottom_navigator_admin.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -72,7 +73,14 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pushReplacementNamed(context, "/movies");
+        // Role specification : wehter it's admin or not :
+        final role = userData['role'] ?? 'user';
+        if (role == 'admin') {
+          Navigator.pushReplacement(context,MaterialPageRoute(builder: (context) => AdminBottomNavigation()));
+        }else{
+          Navigator.pushReplacementNamed(context, "/movies");
+        }
+
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'An error occurred. Please try again.';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:netmatch/admin/widgets/bottom_navigator_admin.dart';
 import 'package:netmatch/auth/loginScreen.dart';
 import 'dart:typed_data';
 import 'dart:convert';
@@ -25,7 +26,30 @@ class MyAccountPage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () async {
+            // Check if user is admin
+            if (user != null) {
+              final userDoc = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .get();
+
+              final role = userDoc.data()?['role'] ?? '';
+
+              if (context.mounted) {
+                if (role == 'admin') {
+                  // Navigate to admin page
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => AdminBottomNavigation()), // Replace with your admin page
+                  );
+                } else {
+                  Navigator.pushReplacementNamed(context, "/movies");                }
+              }
+            } else {
+              Navigator.pop(context);
+            }
+          },
         ),
         title: const Text(
           'My Account',
@@ -112,7 +136,7 @@ class MyAccountPage extends StatelessWidget {
                   onTap: () {
                     // Navigate to movie preferences
                     Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => const MoviePreferencesPage())
+                        MaterialPageRoute(builder: (context) => const MoviePreferencesPage())
                     );
                   },
                 ),
@@ -193,7 +217,7 @@ class MyAccountPage extends StatelessWidget {
       await FirebaseAuth.instance.signOut();
       if (context.mounted) {
         Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (context) => LoginPage())
+            MaterialPageRoute(builder: (context) => LoginPage())
         );
       }
     } catch (e) {
