@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AboutUsPage extends StatelessWidget {
-  const AboutUsPage({Key? key}) : super(key: key);
+  const AboutUsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -41,15 +41,11 @@ class AboutUsPage extends StatelessWidget {
                       color: Colors.red,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(
-                      Icons.movie,
-                      size: 60,
-                      color: Colors.white,
-                    ),
+                    child: Image.asset('assets/logos/logo.png'),
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    'MovieFlix',
+                    'Netmatch',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 28,
@@ -72,11 +68,11 @@ class AboutUsPage extends StatelessWidget {
             _SectionContainer(
               title: 'About',
               child: const Text(
-                'MovieFlix is your ultimate destination for streaming movies and TV shows. '
+                'Netmatch is your ultimate destination for streaming movies and TV shows. '
                     'We offer a vast library of content across all genres, from classic films to the latest releases. '
                     'Our mission is to bring entertainment to everyone, anywhere, anytime.\n\n'
-                    'With personalized recommendations, offline downloads, and multiple viewing profiles, '
-                    'MovieFlix ensures a seamless streaming experience for the whole family.',
+                    'With personalized recommendations, and multiple viewing profiles, '
+                    'Netmatch ensures a seamless streaming experience for the whole family.',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -107,34 +103,25 @@ class AboutUsPage extends StatelessWidget {
                 children: const [
                   _FeatureItem(
                     icon: Icons.movie_creation,
-                    title: 'Unlimited Streaming',
+                    title: 'Unlimited Films/TV Shows',
                     description: 'Watch thousands of movies and TV shows',
                   ),
                   _FeatureItem(
                     icon: Icons.download,
-                    title: 'Offline Downloads',
-                    description: 'Download content to watch offline',
+                    title: 'Customise Profile',
+                    description: 'Manage your movie preferences and the avatar',
                   ),
                   _FeatureItem(
                     icon: Icons.people,
-                    title: 'Multiple Profiles',
-                    description: 'Create profiles for your whole family',
+                    title: 'Multiple friends',
+                    description: 'Discover new content with your friends based on your preferences',
                   ),
                   _FeatureItem(
                     icon: Icons.hd,
-                    title: 'HD & 4K Quality',
-                    description: 'Crystal clear picture quality',
+                    title: 'The Wikipedia of movies',
+                    description: 'Crystal clear movie informations with possibility to watch the trailer',
                   ),
-                  _FeatureItem(
-                    icon: Icons.recommend,
-                    title: 'Personalized Recommendations',
-                    description: 'Discover content you\'ll love',
-                  ),
-                  _FeatureItem(
-                    icon: Icons.devices,
-                    title: 'Multi-Device Support',
-                    description: 'Watch on any device, anywhere',
-                  ),
+
                 ],
               ),
             ),
@@ -145,25 +132,20 @@ class AboutUsPage extends StatelessWidget {
               child: Column(
                 children: const [
                   _TeamMember(
-                    name: 'John Doe',
-                    role: 'CEO & Founder',
+                    name: 'Chaabane BOUSSADIA',
+                    role: 'IGL4',
                     icon: Icons.person,
                   ),
                   _TeamMember(
-                    name: 'Jane Smith',
-                    role: 'Chief Technology Officer',
+                    name: 'Abderrahmen JEDIDI',
+                    role: 'IGL4',
                     icon: Icons.person,
                   ),
                   _TeamMember(
-                    name: 'Mike Johnson',
-                    role: 'Head of Content',
+                    name: 'Raed BETTAHER',
+                    role: 'IGL4',
                     icon: Icons.person,
-                  ),
-                  _TeamMember(
-                    name: 'Sarah Williams',
-                    role: 'Product Manager',
-                    icon: Icons.person,
-                  ),
+                  )
                 ],
               ),
             ),
@@ -176,8 +158,8 @@ class AboutUsPage extends StatelessWidget {
                   _ContactCard(
                     icon: Icons.email,
                     title: 'Email',
-                    value: 'support@movieflix.com',
-                    onTap: () => _launchEmail('support@movieflix.com'),
+                    value: 'support@netmatch.tn',
+                    onTap: () => _launchEmail('support@netmatch.tn'),
                   ),
                   const SizedBox(height: 12),
                   _ContactCard(
