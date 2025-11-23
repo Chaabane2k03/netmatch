@@ -439,7 +439,6 @@ class _MovieDetailsState extends State<MovieDetails> {
     );
   }
 
-  // ... (keep all your existing methods: _buildCastMember, _buildCrewMember, etc.)
 
   Widget _buildCastMember(Map<String, dynamic> person) {
     return Container(
@@ -596,7 +595,32 @@ class _MovieDetailsState extends State<MovieDetails> {
       );
     }
 
-    // ... (keep the rest of your build method exactly as it was, just replace the _buildTrailerSection call)
+
+    final title = movie!['primaryTitle'] ?? movie!['title'] ?? "No Title";
+    final originalTitle = movie!['originalTitle'] ?? title;
+    final imageUrl = movie!['primaryImage'];
+    final rating = movie!['averageRating']?.toString() ?? "N/A";
+    final description = movie!['description'] ?? movie!['plot'] ?? "No description available";
+    final runtime = movie!['runtimeMinutes']?.toString() ?? "N/A";
+    final releaseDate = _formatDate(movie!['releaseDate']);
+    final genres = movie!['genres'] ?? [];
+    final countries = movie!['countriesOfOrigin'] ?? [];
+    final languages = movie!['spokenLanguages'] ?? [];
+    final budget = movie!['budget'] != null ? '\$${_formatNumber(movie!['budget'])}' : "N/A";
+    final gross = movie!['grossWorldwide'] != null ? '\$${_formatNumber(movie!['grossWorldwide'])}' : "N/A";
+    final metascore = movie!['metascore']?.toString() ?? "N/A";
+    final numVotes = movie!['numVotes'] != null ? _formatNumber(movie!['numVotes']) : "N/A";
+
+    final directors = (movie!['directors'] ?? []).where((person) => person['job'] == 'director').toList();
+    final writers = (movie!['writers'] ?? []).where((person) => person['job'] == 'writer').toList();
+    final cast = (movie!['cast'] ?? []).where((person) => person['job'] == 'actor' || person['job'] == 'actress').toList();
+    final crew = (movie!['cast'] ?? []).where((person) => 
+        person['job'] == 'producer' || 
+        person['job'] == 'composer' || 
+        person['job'] == 'cinematographer' || 
+        person['job'] == 'editor' || 
+        person['job'] == 'production_designer' || 
+        person['job'] == 'casting_director').toList();
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -652,7 +676,6 @@ class _MovieDetailsState extends State<MovieDetails> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Your existing title section
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -751,7 +774,135 @@ class _MovieDetailsState extends State<MovieDetails> {
                       textAlign: TextAlign.justify,
                     ),
                   ),
-                  // ... (rest of your existing sections)
+                  
+                  // Genres
+                  if (genres.isNotEmpty) ...[
+                    _buildSectionTitle('Genres'),
+                    _buildChipList(genres),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Interests
+                  _buildInterestsSection(),
+
+                  const SizedBox(height: 24),
+
+                  // Key Details
+                  _buildSectionTitle('Movie Details'),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[900]!.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildInfoRow('Release Date', releaseDate),
+                        _buildInfoRow('Countries', countries.join(', ')),
+                        _buildInfoRow('Languages', languages.join(', ')),
+                        _buildInfoRow('Budget', budget),
+                        _buildInfoRow('Worldwide Gross', gross),
+                        _buildInfoRow('Filming Locations', (movie!['filmingLocations'] ?? []).join(', ')),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Directors
+                  if (directors.isNotEmpty) ...[
+                    _buildSectionTitle('Directors'),
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: directors.length,
+                        itemBuilder: (context, index) {
+                          return _buildCrewMember(directors[index]);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Writers
+                  if (writers.isNotEmpty) ...[
+                    _buildSectionTitle('Writers'),
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: writers.length,
+                        itemBuilder: (context, index) {
+                          return _buildCrewMember(writers[index]);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Cast
+                  if (cast.isNotEmpty) ...[
+                    _buildSectionTitle('Cast'),
+                    SizedBox(
+                      height: 140,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: cast.length,
+                        itemBuilder: (context, index) {
+                          return _buildCastMember(cast[index]);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Crew
+                  if (crew.isNotEmpty) ...[
+                    _buildSectionTitle('Crew'),
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: crew.length,
+                        itemBuilder: (context, index) {
+                          return _buildCrewMember(crew[index]);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Production Companies
+                  if (movie!['productionCompanies'] != null && movie!['productionCompanies'].isNotEmpty) ...[
+                    _buildSectionTitle('Production Companies'),
+                    _buildChipList(movie!['productionCompanies'].map((company) => company['name']).toList()),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // External Links
+                  if (movie!['externalLinks'] != null && movie!['externalLinks'].isNotEmpty) ...[
+                    _buildSectionTitle('Follow & Watch'),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: movie!['externalLinks'].map<Widget>((link) {
+                        return ActionChip(
+                          avatar: Icon(_getLinkIcon(link), color: Colors.white, size: 16),
+                          label: Text(
+                            _getLinkType(link),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          backgroundColor: Colors.blue.withOpacity(0.8),
+                          onPressed: () {
+                            // Handle link opening
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+
+                  const SizedBox(height: 32)
                 ],
               ),
             ),
@@ -761,7 +912,6 @@ class _MovieDetailsState extends State<MovieDetails> {
     );
   }
 
-  // ... (keep all your existing helper methods: _buildInfoChip, _buildRatingStat, etc.)
 
   Widget _buildInfoChip(IconData icon, String value, String label, Color color) {
     return Expanded(
