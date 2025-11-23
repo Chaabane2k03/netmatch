@@ -76,6 +76,7 @@ flutter:
     - assets/animations/cinema.json
     - assets/logos/logo.png
     - assets/videos/video.mp4
+    - assets/images/oops.png
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

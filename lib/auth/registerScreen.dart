@@ -216,6 +216,7 @@ class _SignUpPageState extends State<SignUpPage> {
         'profileImageBase64': profileImageBase64,
         'role' : 'user',
         'createdAt': FieldValue.serverTimestamp(),
+        'isActive' : true,
       });
 
       // Navigate to home page or show success message

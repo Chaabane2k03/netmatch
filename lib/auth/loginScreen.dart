@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:netmatch/auth/registerScreen.dart';
+import 'package:netmatch/errors/bannedScreen.dart';
 import 'package:netmatch/profile/edit_profile.dart';
 
 class LoginPage extends StatefulWidget {
@@ -50,6 +51,19 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception('User profile not found. Please sign up again.');
       }
 
+      // Check if user is active
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final isActive = userData['isActive'] ?? false;
+
+      if (!isActive) {
+        // User is not active, sign them out and redirect to inactive screen
+        await _auth.signOut();
+        if (mounted) {
+          Navigator.pushReplacement(context,MaterialPageRoute(builder: (context) => BannedScreen()));
+        }
+        return;
+      }
+
       // Successfully logged in
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -58,14 +72,7 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Colors.green,
           ),
         );
-        //BEGIN NAVIGATE TO HOME PAGE
-
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) => MyAccountPage())
-        );
-
-
-        //END NAVIGATE TO HOME PAGE
+        Navigator.pushReplacementNamed(context, "/movies");
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'An error occurred. Please try again.';
