@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:netmatch/movies/explorePage.dart';
+import 'package:netmatch/movies/movie_details.dart';
 import 'package:netmatch/movies/profilePage.dart';
 import 'package:netmatch/movies/savedPage.dart';
 import 'dart:convert';
@@ -17,7 +18,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  int botIndex = 0 ;
+  int botIndex = 0;
   List<dynamic> trendingMovies = [];
   List<dynamic> topRatedMovies = [];
   List<dynamic> popularMovies = [];
@@ -30,17 +31,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchMovies() async {
-    const apiKey = '085d820d8emshce483d7a1ac0906p11989ajsn9f0c6d6465fd';
+    const apiKey = '037bb2a6f2msh3318286b4442a19p1830dbjsn1c3768125ddc';
     const apiHost = 'imdb236.p.rapidapi.com';
 
     try {
       // Trending movies
       final trendingResponse = await http.get(
         Uri.parse('https://$apiHost/api/imdb/most-popular-movies'),
-        headers: {
-          'x-rapidapi-key': apiKey,
-          'x-rapidapi-host': apiHost,
-        },
+        headers: {'x-rapidapi-key': apiKey, 'x-rapidapi-host': apiHost},
       );
       print("TRENDING STATUS: ${trendingResponse.statusCode}");
       /*print("TRENDING BODY: ${trendingResponse.body}");*/
@@ -48,21 +46,17 @@ class _HomePageState extends State<HomePage> {
       // Top rated movies
       final topRatedResponse = await http.get(
         Uri.parse('https://imdb236.p.rapidapi.com/api/imdb/top250-movies'),
-        headers: {
-          'x-rapidapi-key': apiKey,
-          'x-rapidapi-host': apiHost,
-        },
+        headers: {'x-rapidapi-key': apiKey, 'x-rapidapi-host': apiHost},
       );
       print("TOP RATED STATUS: ${topRatedResponse.statusCode}");
       /*print("TOP RATED BODY: ${topRatedResponse.body}");*/
 
       // Popular movies
       final popularResponse = await http.get(
-        Uri.parse('https://imdb236.p.rapidapi.com/api/imdb/top-rated-english-movies'),
-        headers: {
-          'x-rapidapi-key': apiKey,
-          'x-rapidapi-host': apiHost,
-        },
+        Uri.parse(
+          'https://imdb236.p.rapidapi.com/api/imdb/top-rated-english-movies',
+        ),
+        headers: {'x-rapidapi-key': apiKey, 'x-rapidapi-host': apiHost},
       );
       print("POPULAR STATUS: ${popularResponse.statusCode}");
       /*print("POPULAR BODY: ${popularResponse.body}");*/
@@ -70,7 +64,6 @@ class _HomePageState extends State<HomePage> {
       if (trendingResponse.statusCode == 200 &&
           topRatedResponse.statusCode == 200 &&
           popularResponse.statusCode == 200) {
-
         final trendingData = json.decode(trendingResponse.body);
         final topRatedData = json.decode(topRatedResponse.body);
         final popularData = json.decode(popularResponse.body);
@@ -84,8 +77,6 @@ class _HomePageState extends State<HomePage> {
 
           isLoading = false;
         });
-
-
       } else {
         print('Error fetching IMDb data');
         setState(() => isLoading = false);
@@ -95,6 +86,7 @@ class _HomePageState extends State<HomePage> {
       setState(() => isLoading = false);
     }
   }
+
   Widget _buildPageContent() {
     switch (botIndex) {
       case 0:
@@ -112,10 +104,10 @@ class _HomePageState extends State<HomePage> {
                   const Text(
                     'NetMatch',
                     style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1,
-                        color : Colors.white
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1,
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -163,9 +155,7 @@ class _HomePageState extends State<HomePage> {
             ),
 
             // Continue Watching
-            SliverToBoxAdapter(
-              child: _buildSectionTitle('Continue Watching'),
-            ),
+            SliverToBoxAdapter(child: _buildSectionTitle('Continue Watching')),
             SliverToBoxAdapter(
               child: SizedBox(
                 height: 180,
@@ -174,7 +164,10 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: popularMovies.length,
                   itemBuilder: (context, index) {
-                    return _buildContinueWatchingCard(popularMovies[index], index);
+                    return _buildContinueWatchingCard(
+                      popularMovies[index],
+                      index,
+                    );
                   },
                 ),
               ),
@@ -239,12 +232,16 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator(color: Colors.red))
-            :_buildPageContent()),
-      bottomNavigationBar: BottomNavBar(currentIndex: botIndex, onTap: (index){
-        setState(() {
-          botIndex = index ;
-        });
-      }),
+            : _buildPageContent(),
+      ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: botIndex,
+        onTap: (index) {
+          setState(() {
+            botIndex = index;
+          });
+        },
+      ),
     );
   }
 
@@ -256,7 +253,7 @@ class _HomePageState extends State<HomePage> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ?  Colors.red : Colors.black,
+          color: isSelected ? Colors.red : Colors.black,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
             color: isSelected ? Colors.red : Colors.grey[800]!,
@@ -277,7 +274,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildFeaturedBanner(dynamic movie) {
-    final title = movie['primaryTitle'] ?? movie['originalTitle'] ?? 'Featured Movie';
+    final title =
+        movie['primaryTitle'] ?? movie['originalTitle'] ?? 'Featured Movie';
     final imageUrl = movie['primaryImage'];
 
     return Container(
@@ -311,10 +309,7 @@ class _HomePageState extends State<HomePage> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.8),
-                ],
+                colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
               ),
             ),
           ),
@@ -339,9 +334,12 @@ class _HomePageState extends State<HomePage> {
                 ElevatedButton.icon(
                   onPressed: () {},
                   icon: const Icon(Icons.play_arrow, color: Colors.black),
-                  label: const Text('Watch Now', style: TextStyle(color: Colors.black)),
+                  label: const Text(
+                    'Watch Now',
+                    style: TextStyle(color: Colors.black),
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red ,
+                    backgroundColor: Colors.red,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -371,10 +369,7 @@ class _HomePageState extends State<HomePage> {
           ),
           TextButton(
             onPressed: () {},
-            child: const Text(
-              'See all',
-              style: TextStyle(color: Colors.red ),
-            ),
+            child: const Text('See all', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -386,93 +381,104 @@ class _HomePageState extends State<HomePage> {
     final imageUrl = movie['primaryImage'];
     final progress = (index * 0.15 + 0.2).clamp(0.0, 1.0);
 
-    return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              Container(
-                height: 100,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey[900],
-                ),
-                child: imageUrl != null
-                    ? ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    imageUrl,
-                    width: 140,
-                    height: 100,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(color: Colors.grey[900]);
-                    },
-                  ),
-                )
-                    : const SizedBox(),
-              ),
-              Positioned.fill(
-                child: Center(
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.play_arrow, color: Colors.white),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 3,
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                MovieDetails(movieId: movie['id'] ?? movie['tconst']),
+          ),
+        );
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey[900],
                   ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: progress,
+                  child: imageUrl != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            imageUrl,
+                            width: 140,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(color: Colors.grey[900]);
+                            },
+                          ),
+                        )
+                      : const SizedBox(),
+                ),
+                Positioned.fill(
+                  child: Center(
                     child: Container(
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.red ,
-                        borderRadius: BorderRadius.circular(2),
+                        color: Colors.black.withOpacity(0.7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.play_arrow, color: Colors.white),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 3,
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: progress,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${(progress * 100).toInt()}% watched',
-            style: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 11,
+            const SizedBox(height: 4),
+            Text(
+              '${(progress * 100).toInt()}% watched',
+              style: TextStyle(color: Colors.grey[500], fontSize: 11),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -483,83 +489,62 @@ class _HomePageState extends State<HomePage> {
     final imageUrl = movie['primaryImage'];
     final rating = movie['averageRating']?.toString() ?? 'N/A';
 
-    return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey[900],
-                ),
-                child: imageUrl != null
-                    ? ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    imageUrl,
-                    width: 140,
-                    height: 200,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(color: Colors.grey[900]);
-                    },
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                MovieDetails(movieId: movie['id'] ?? movie['tconst']),
+          ),
+        );
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey[900],
                   ),
-                )
-                    : const SizedBox(),
-              ),
-              if (rating != 'N/A')
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.star, color: Colors.red , size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          rating,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                  child: imageUrl != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            imageUrl,
+                            width: 140,
+                            height: 200,
+                            fit: BoxFit.cover,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
+                        )
+                      : const SizedBox(),
                 ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+              ],
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (year.isNotEmpty)
+            const SizedBox(height: 8),
             Text(
-              year,
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 11,
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-        ],
+            if (year.isNotEmpty)
+              Text(
+                year,
+                style: TextStyle(color: Colors.grey[500], fontSize: 11),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -597,16 +582,12 @@ class _HomePageState extends State<HomePage> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: isSelected ? Colors.red  : Colors.grey[600],
-          size: 28,
-        ),
+        Icon(icon, color: isSelected ? Colors.red : Colors.grey[600], size: 28),
         const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.red  : Colors.grey[600],
+            color: isSelected ? Colors.red : Colors.grey[600],
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:netmatch/movies/movie_details.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({Key? key}) : super(key: key);
@@ -48,7 +49,7 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 
   Future<void> fetchExploreMovies() async {
-    const apiKey = '085d820d8emshce483d7a1ac0906p11989ajsn9f0c6d6465fd';
+    const apiKey = '037bb2a6f2msh3318286b4442a19p1830dbjsn1c3768125ddc';
     const apiHost = 'imdb236.p.rapidapi.com';
 
     try {
@@ -399,116 +400,129 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 
   Widget _buildMovieGridItem(dynamic movie) {
-    final title = movie['primaryTitle'] ?? movie['originalTitle'] ?? 'Unknown';
-    final year = movie['releaseDate']?.substring(0, 4) ?? '';
-    final imageUrl = movie['primaryImage'];
-    final rating = movie['averageRating']?.toString() ?? 'N/A';
+  final title = movie['primaryTitle'] ?? movie['originalTitle'] ?? 'Unknown';
+  final year = movie['releaseDate']?.substring(0, 4) ?? '';
+  final imageUrl = movie['primaryImage'];
+  final rating = movie['averageRating']?.toString() ?? 'N/A';
 
-    return GestureDetector(
-      onTap: () {
-        // Navigate to movie details
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              Container(
-                height: 240,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey[900],
-                ),
-                child: imageUrl != null
-                    ? ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    height: 240,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[900],
-                        child: const Center(
-                          child: Icon(Icons.movie, color: Colors.grey, size: 50),
-                        ),
-                      );
-                    },
-                  ),
-                )
-                    : Center(
-                  child: Icon(Icons.movie, color: Colors.grey[700], size: 50),
-                ),
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MovieDetails(movieId: movie['id'] ?? movie['tconst'])
+,
+        ),
+      );
+    },
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Stack(
+          children: [
+            Container(
+              height: 240,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.grey[900],
               ),
-              // Rating Badge
-              if (rating != 'N/A')
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(8),
+              child: imageUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        imageUrl,
+                        width: double.infinity,
+                        height: 240,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[900],
+                            child: const Center(
+                              child: Icon(Icons.movie, color: Colors.grey, size: 50),
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : Center(
+                      child: Icon(Icons.movie, color: Colors.grey[700], size: 50),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.star, color: Colors.red, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          rating,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              // Bookmark Icon
+            ),
+
+            // ⭐ Rating badge
+            if (rating != 'N/A')
               Positioned(
                 top: 8,
-                left: 8,
+                right: 8,
                 child: Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.7),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
-                    Icons.bookmark_border,
-                    color: Colors.white,
-                    size: 18,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.star, color: Colors.red, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        rating,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (year.isNotEmpty)
-            Text(
-              year,
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 12,
+
+            // 🔖 Bookmark icon
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.bookmark_border,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
             ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        // Movie Title
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+
+        // Year
+        if (year.isNotEmpty)
+          Text(
+            year,
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 12,
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
 }
