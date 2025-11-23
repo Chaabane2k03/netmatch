@@ -31,7 +31,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchMovies() async {
-    const apiKey = '037bb2a6f2msh3318286b4442a19p1830dbjsn1c3768125ddc';
+    const apiKey = '791ce2b8dbmsh264a5de59c49373p1578a7jsn279cbd83e889';
     const apiHost = 'imdb236.p.rapidapi.com';
 
     try {
@@ -94,6 +94,7 @@ class _HomePageState extends State<HomePage> {
           slivers: [
             // App Bar
             SliverAppBar(
+              automaticallyImplyLeading: false,
               floating: true,
               backgroundColor: const Color(0xFF0F0F0F),
               elevation: 0,

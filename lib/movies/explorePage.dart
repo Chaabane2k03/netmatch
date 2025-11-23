@@ -49,7 +49,7 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 
   Future<void> fetchExploreMovies() async {
-    const apiKey = '037bb2a6f2msh3318286b4442a19p1830dbjsn1c3768125ddc';
+    const apiKey = '791ce2b8dbmsh264a5de59c49373p1578a7jsn279cbd83e889';
     const apiHost = 'imdb236.p.rapidapi.com';
 
     try {
@@ -188,6 +188,7 @@ class _ExplorePageState extends State<ExplorePage> {
           slivers: [
             // App Bar with Search
             SliverAppBar(
+              automaticallyImplyLeading: false,
               floating: true,
               pinned: true,
               backgroundColor: const Color(0xFF0F0F0F),
