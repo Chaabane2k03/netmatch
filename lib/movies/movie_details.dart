@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:netmatch/movies/widgets/favorite_button.dart';
 
 class MovieDetails extends StatefulWidget {
   final String movieId;
@@ -55,14 +56,14 @@ class _MovieDetailsState extends State<MovieDetails> {
     }
   }
 
-  void _onPlaylistPressed() {
+  /*void _onPlaylistPressed() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Add ${movie?['primaryTitle'] ?? 'movie'} to playlist'),
         backgroundColor: Colors.red,
       ),
     );
-  }
+  }*/
 
   Future<void> _launchTrailer(String url) async {
     try {
@@ -632,6 +633,26 @@ class _MovieDetailsState extends State<MovieDetails> {
             floating: false,
             pinned: true,
             actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: FavoriteButton(
+                  movie: {
+                    'id': widget.movieId,
+                    'primaryTitle': movie!['primaryTitle'] ?? movie!['title'] ?? 'No Title',
+                    'originalTitle': movie!['originalTitle'],
+                    'releaseDate': movie!['releaseDate'],
+                    'primaryImage': movie!['primaryImage'],
+                    'averageRating': movie!['averageRating'],
+                    'genres': movie!['genres'] ?? [],
+                  },
+                  size: 28,
+                  activeColor: Colors.red,
+                  inactiveColor: Colors.white,
+                ),
+              ),
+            ],
+
+            /*actions: [
               IconButton(
                 onPressed: _onPlaylistPressed,
                 icon: Container(
@@ -647,7 +668,7 @@ class _MovieDetailsState extends State<MovieDetails> {
                   ),
                 ),
               ),
-            ],
+            ],*/
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 movie!['primaryTitle'] ?? movie!['title'] ?? "No Title",
