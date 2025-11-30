@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:netmatch/profile/edit_profile.dart';
 
+import '../movies/movies_management.dart';
 import '../user/user_management.dart';
 
 class AdminBottomNavigation extends StatefulWidget {
@@ -57,16 +58,4 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
 }
 
 
-class MoviesPage extends StatelessWidget {
-  const MoviesPage({Key? key}) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Movies Management',
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-}
