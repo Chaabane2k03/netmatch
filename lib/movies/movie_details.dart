@@ -18,7 +18,7 @@ class _MovieDetailsState extends State<MovieDetails> {
   bool loading = true;
   bool error = false;
 
-  final String apiKey = "791ce2b8dbmsh264a5de59c49373p1578a7jsn279cbd83e889";
+  final String apiKey = "15eac98273msh04a9da2a56942f2p17dcc2jsn41c6c8689c66";
   final String apiHost = "imdb236.p.rapidapi.com";
 
   @override

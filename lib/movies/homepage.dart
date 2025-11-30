@@ -5,6 +5,7 @@ import 'package:netmatch/movies/movie_details.dart';
 import 'package:netmatch/movies/profilePage.dart';
 import 'package:netmatch/movies/savedPage.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:netmatch/movies/widgets/bottom_nav_bar.dart';
 import 'package:netmatch/profile/edit_profile.dart';
@@ -24,32 +25,135 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> popularMovies = [];
   bool isLoading = true;
 
+  // Cache configuration
+  static const String CACHE_KEY_TRENDING = 'home_trending_movies';
+  static const String CACHE_KEY_TOP_RATED = 'home_top_rated_movies';
+  static const String CACHE_KEY_POPULAR = 'home_popular_movies';
+  static const String CACHE_KEY_TIMESTAMP = 'home_movies_timestamp';
+  static const Duration CACHE_DURATION = Duration(hours: 6);
+
   @override
   void initState() {
     super.initState();
     fetchMovies();
   }
 
-  Future<void> fetchMovies() async {
-    const apiKey = '791ce2b8dbmsh264a5de59c49373p1578a7jsn279cbd83e889';
+  // Check if cache is still valid
+  Future<bool> _isCacheValid() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getInt(CACHE_KEY_TIMESTAMP);
+
+      if (timestamp == null) return false;
+
+      final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      final now = DateTime.now();
+
+      return now.difference(cacheTime) < CACHE_DURATION;
+    } catch (e) {
+      print('Error checking cache validity: $e');
+      return false;
+    }
+  }
+
+  // Load movies from cache
+  Future<Map<String, List<dynamic>>?> _loadFromCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final trendingData = prefs.getString(CACHE_KEY_TRENDING);
+      final topRatedData = prefs.getString(CACHE_KEY_TOP_RATED);
+      final popularData = prefs.getString(CACHE_KEY_POPULAR);
+
+      if (trendingData != null && topRatedData != null && popularData != null) {
+        print('✅ Loaded movies from cache');
+        return {
+          'trending': List<dynamic>.from(json.decode(trendingData)),
+          'topRated': List<dynamic>.from(json.decode(topRatedData)),
+          'popular': List<dynamic>.from(json.decode(popularData)),
+        };
+      }
+    } catch (e) {
+      print('Error loading from cache: $e');
+    }
+    return null;
+  }
+
+  // Save movies to cache
+  Future<void> _saveToCache({
+    required List<dynamic> trending,
+    required List<dynamic> topRated,
+    required List<dynamic> popular,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setString(CACHE_KEY_TRENDING, json.encode(trending));
+      await prefs.setString(CACHE_KEY_TOP_RATED, json.encode(topRated));
+      await prefs.setString(CACHE_KEY_POPULAR, json.encode(popular));
+      await prefs.setInt(CACHE_KEY_TIMESTAMP, DateTime.now().millisecondsSinceEpoch);
+
+      print('✅ Saved movies to cache');
+    } catch (e) {
+      print('Error saving to cache: $e');
+    }
+  }
+
+  // Clear cache
+  Future<void> _clearCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(CACHE_KEY_TRENDING);
+      await prefs.remove(CACHE_KEY_TOP_RATED);
+      await prefs.remove(CACHE_KEY_POPULAR);
+      await prefs.remove(CACHE_KEY_TIMESTAMP);
+      print('✅ Cache cleared');
+    } catch (e) {
+      print('Error clearing cache: $e');
+    }
+  }
+
+  Future<void> fetchMovies({bool forceRefresh = false}) async {
+    const apiKey = '15eac98273msh04a9da2a56942f2p17dcc2jsn41c6c8689c66';
     const apiHost = 'imdb236.p.rapidapi.com';
 
     try {
+      // Check cache first (unless force refresh)
+      if (!forceRefresh) {
+        final isCacheValid = await _isCacheValid();
+
+        if (isCacheValid) {
+          final cachedData = await _loadFromCache();
+
+          if (cachedData != null) {
+            setState(() {
+              trendingMovies = cachedData['trending']!;
+              topRatedMovies = cachedData['topRated']!;
+              popularMovies = cachedData['popular']!;
+              isLoading = false;
+            });
+            return; // Use cached data, no API call needed!
+          }
+        }
+      }
+
+      // If no valid cache or force refresh, fetch from API
+      print('🌐 Fetching movies from API...');
+
       // Trending movies
       final trendingResponse = await http.get(
         Uri.parse('https://$apiHost/api/imdb/most-popular-movies'),
         headers: {'x-rapidapi-key': apiKey, 'x-rapidapi-host': apiHost},
       );
       print("TRENDING STATUS: ${trendingResponse.statusCode}");
-      /*print("TRENDING BODY: ${trendingResponse.body}");*/
 
       // Top rated movies
       final topRatedResponse = await http.get(
         Uri.parse('https://imdb236.p.rapidapi.com/api/imdb/top250-movies'),
         headers: {'x-rapidapi-key': apiKey, 'x-rapidapi-host': apiHost},
       );
+
       print("TOP RATED STATUS: ${topRatedResponse.statusCode}");
-      /*print("TOP RATED BODY: ${topRatedResponse.body}");*/
 
       // Popular movies
       final popularResponse = await http.get(
@@ -59,7 +163,6 @@ class _HomePageState extends State<HomePage> {
         headers: {'x-rapidapi-key': apiKey, 'x-rapidapi-host': apiHost},
       );
       print("POPULAR STATUS: ${popularResponse.statusCode}");
-      /*print("POPULAR BODY: ${popularResponse.body}");*/
 
       if (trendingResponse.statusCode == 200 &&
           topRatedResponse.statusCode == 200 &&
@@ -70,150 +173,216 @@ class _HomePageState extends State<HomePage> {
 
         print("trending data : ${trendingData}");
 
-        setState(() {
-          trendingMovies = List.from(trendingData);
-          topRatedMovies = List.from(topRatedData);
-          popularMovies = List.from(popularData).take(6).toList();
+        final trending = List.from(trendingData);
+        final topRated = List.from(topRatedData);
+        final popular = List.from(popularData).take(6).toList();
 
+        // Save to cache
+        await _saveToCache(
+          trending: trending,
+          topRated: topRated,
+          popular: popular,
+        );
+
+        setState(() {
+          trendingMovies = trending;
+          topRatedMovies = topRated;
+          popularMovies = popular;
           isLoading = false;
         });
       } else {
         print('Error fetching IMDb data');
-        setState(() => isLoading = false);
+
+        // Try to load from cache as fallback
+        final cachedData = await _loadFromCache();
+        if (cachedData != null) {
+          setState(() {
+            trendingMovies = cachedData['trending']!;
+            topRatedMovies = cachedData['topRated']!;
+            popularMovies = cachedData['popular']!;
+            isLoading = false;
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Using cached data. Pull to refresh.'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } else {
+          setState(() => isLoading = false);
+        }
       }
     } catch (e) {
       print('Error fetching IMDb data: $e');
-      setState(() => isLoading = false);
+
+      // Try to load from cache as fallback
+      final cachedData = await _loadFromCache();
+      if (cachedData != null) {
+        setState(() {
+          trendingMovies = cachedData['trending']!;
+          topRatedMovies = cachedData['topRated']!;
+          popularMovies = cachedData['popular']!;
+          isLoading = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Using cached data. Pull to refresh.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        setState(() => isLoading = false);
+      }
     }
   }
 
   Widget _buildPageContent() {
     switch (botIndex) {
       case 0:
-        return CustomScrollView(
-          slivers: [
-            // App Bar
-            SliverAppBar(
-              automaticallyImplyLeading: false,
-              floating: true,
-              backgroundColor: const Color(0xFF0F0F0F),
-              elevation: 0,
-              title: Row(
-                children: [
-                  Icon(Icons.play_arrow, color: Colors.red, size: 28),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'NetMatch',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.search, size: 28),
-                  onPressed: () {},
-                ),
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined, size: 28),
-                  onPressed: () {},
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
-
-            // Tab Bar
-            SliverToBoxAdapter(
-              child: Container(
-                height: 50,
-                margin: const EdgeInsets.symmetric(vertical: 16),
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+        return RefreshIndicator(
+          color: Colors.red,
+          backgroundColor: const Color(0xFF1A1A1A),
+          onRefresh: () async {
+            await fetchMovies(forceRefresh: true);
+          },
+          child: CustomScrollView(
+            slivers: [
+              // App Bar
+              SliverAppBar(
+                automaticallyImplyLeading: false,
+                floating: true,
+                backgroundColor: const Color(0xFF0F0F0F),
+                elevation: 0,
+                title: Row(
                   children: [
-                    _buildTab('Featured', 0),
-                    _buildTab('Movies', 1),
-                    _buildTab('TV Shows', 2),
-                    _buildTab('Trending', 3),
+                    Icon(Icons.play_arrow, color: Colors.red, size: 28),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'NetMatch',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1,
+                        color: Colors.white,
+                      ),
+                    ),
                   ],
                 ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.search, size: 28),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined, size: 28),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.red, size: 28),
+                    onPressed: () async {
+                      setState(() => isLoading = true);
+                      await fetchMovies(forceRefresh: true);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                ],
               ),
-            ),
 
-            // Featured Banner
-            SliverToBoxAdapter(
-              child: Container(
-                height: 200,
-                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: trendingMovies.isNotEmpty
-                    ? _buildFeaturedBanner(trendingMovies[0])
-                    : const SizedBox(),
-              ),
-            ),
-
-            // Continue Watching
-            SliverToBoxAdapter(child: _buildSectionTitle('Continue Watching')),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 180,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: popularMovies.length,
-                  itemBuilder: (context, index) {
-                    return _buildContinueWatchingCard(
-                      popularMovies[index],
-                      index,
-                    );
-                  },
+              // Tab Bar
+              SliverToBoxAdapter(
+                child: Container(
+                  height: 50,
+                  margin: const EdgeInsets.symmetric(vertical: 16),
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    children: [
+                      _buildTab('Featured', 0),
+                      _buildTab('Movies', 1),
+                      _buildTab('TV Shows', 2),
+                      _buildTab('Trending', 3),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // Trending Now
-            /*SliverToBoxAdapter(
-              child: _buildSectionTitle('Trending Now'),
-            ),
-
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 260,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: trendingMovies.length,
-                  itemBuilder: (context, index) {
-                    return _buildMovieCard(trendingMovies[index]);
-                  },
+              // Featured Banner
+              SliverToBoxAdapter(
+                child: Container(
+                  height: 200,
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: trendingMovies.isNotEmpty
+                      ? _buildFeaturedBanner(trendingMovies[0])
+                      : const SizedBox(),
                 ),
               ),
-            ),*/
 
-            // Top Rated
-
-            /*SliverToBoxAdapter(
-              child: _buildSectionTitle('Top Rated'),
-            ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 260,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: topRatedMovies.length,
-                  itemBuilder: (context, index) {
-                    return _buildMovieCard(topRatedMovies[index]);
-                  },
+              // Continue Watching
+              SliverToBoxAdapter(child: _buildSectionTitle('Continue Watching')),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 180,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: popularMovies.length,
+                    itemBuilder: (context, index) {
+                      return _buildContinueWatchingCard(
+                        popularMovies[index],
+                        index,
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-            */
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
-          ],
+
+              // Trending Now
+              /*SliverToBoxAdapter(
+                child: _buildSectionTitle('Trending Now'),
+              ),
+
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 260,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: trendingMovies.length,
+                    itemBuilder: (context, index) {
+                      return _buildMovieCard(trendingMovies[index]);
+                    },
+                  ),
+                ),
+              ),*/
+
+              // Top Rated
+
+              /*SliverToBoxAdapter(
+                child: _buildSectionTitle('Top Rated'),
+              ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 260,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: topRatedMovies.length,
+                    itemBuilder: (context, index) {
+                      return _buildMovieCard(topRatedMovies[index]);
+                    },
+                  ),
+                ),
+              ),
+              */
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
+          ),
         );
 
       case 1:
@@ -365,7 +534,7 @@ class _HomePageState extends State<HomePage> {
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: Colors.white,
             ),
           ),
           TextButton(
@@ -408,17 +577,17 @@ class _HomePageState extends State<HomePage> {
                   ),
                   child: imageUrl != null
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            imageUrl,
-                            width: 140,
-                            height: 100,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(color: Colors.grey[900]);
-                            },
-                          ),
-                        )
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      imageUrl,
+                      width: 140,
+                      height: 100,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(color: Colors.grey[900]);
+                      },
+                    ),
+                  )
                       : const SizedBox(),
                 ),
                 Positioned.fill(
@@ -516,14 +685,14 @@ class _HomePageState extends State<HomePage> {
                   ),
                   child: imageUrl != null
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            imageUrl,
-                            width: 140,
-                            height: 200,
-                            fit: BoxFit.cover,
-                          ),
-                        )
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      imageUrl,
+                      width: 140,
+                      height: 200,
+                      fit: BoxFit.cover,
+                    ),
+                  )
                       : const SizedBox(),
                 ),
               ],
@@ -549,35 +718,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  /*Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildNavItem(Icons.home, 'Home', true),
-              _buildNavItem(Icons.explore_outlined, 'Explore', false),
-              _buildNavItem(Icons.bookmark_border, 'Saved', false),
-              _buildNavItem(Icons.person_outline, 'Profile', false),
-            ],
-          ),
-        ),
-      ),
-    );
-  }*/
 
   Widget _buildNavItem(IconData icon, String label, bool isSelected) {
     return Column(

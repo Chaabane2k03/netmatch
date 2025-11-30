@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
+// Import your seed service
+import '../services/seedfavorites.dart';
+
 // User Model
 class UserModel {
   final String uid;
@@ -50,7 +53,9 @@ class UsersPage extends StatefulWidget {
 
 class _UsersPageState extends State<UsersPage> {
   final TextEditingController _searchController = TextEditingController();
+  final SeedFavoritesData _seedService = SeedFavoritesData();
   String _searchQuery = '';
+  bool _isSeedingData = false;
 
   @override
   void dispose() {
@@ -74,6 +79,200 @@ class _UsersPageState extends State<UsersPage> {
     }).toList();
   }
 
+  Future<void> _showSeedDataDialog() async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          title: const Text(
+            'Seed Test Data',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.add_circle, color: Colors.green),
+                title: const Text(
+                  'Seed Favorites',
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  'Add test favorites for users',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _seedFavorites();
+                },
+              ),
+              const Divider(color: Colors.grey),
+              ListTile(
+                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                title: const Text(
+                  'Clear Favorites',
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  'Remove all favorites',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _clearFavorites();
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Color(0xFFE50914)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _seedFavorites() async {
+    setState(() {
+      _isSeedingData = true;
+    });
+
+    try {
+      await _seedService.seedFavorites();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text('✅ Successfully seeded favorites!'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('❌ Error: $e'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isSeedingData = false;
+      });
+    }
+  }
+
+  Future<void> _clearFavorites() async {
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text(
+          'Confirm Clear',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'This will delete all favorites from the database. This action cannot be undone.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Clear',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() {
+      _isSeedingData = true;
+    });
+
+    try {
+      await _seedService.clearAllFavorites();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text('✅ Cleared all favorites!'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('❌ Error: $e'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isSeedingData = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,6 +284,27 @@ class _UsersPageState extends State<UsersPage> {
           style: TextStyle(color: Colors.white),
         ),
         elevation: 0,
+        actions: [
+          // Seed Data Button
+          IconButton(
+            onPressed: _isSeedingData ? null : _showSeedDataDialog,
+            icon: _isSeedingData
+                ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                color: Color(0xFFE50914),
+                strokeWidth: 2,
+              ),
+            )
+                : const Icon(
+              Icons.add,
+              color: Color(0xFFE50914),
+            ),
+            tooltip: 'Seed Test Data',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
@@ -332,7 +552,7 @@ class UserCard extends StatelessWidget {
   }
 }
 
-// User Details Page
+// User Details Page (unchanged)
 class UserDetailsPage extends StatefulWidget {
   final UserModel user;
 

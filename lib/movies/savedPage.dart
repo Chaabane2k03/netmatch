@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:netmatch/movies/matchingPage.dart';
 import 'package:netmatch/services/favorites_service.dart';
 
 class SavedPage extends StatefulWidget {
@@ -49,6 +50,19 @@ class _SavedPageState extends State<SavedPage> {
                   onPressed: () {},
                 ),
                 const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) =>  MatchingPage()),
+                    );
+                  },
+                  icon: const Icon(Icons.favorite, color: Colors.red),
+                  label: const Text(
+                    "Matches",
+                    style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
               ],
             ),
 
@@ -72,6 +86,12 @@ class _SavedPageState extends State<SavedPage> {
             StreamBuilder<List<Map<String, dynamic>>>(
               stream: _favoritesService.getFavoritesStream(),
               builder: (context, snapshot) {
+                // Debug print
+                print('Stream state: ${snapshot.connectionState}');
+                print('Has error: ${snapshot.hasError}');
+                print('Error: ${snapshot.error}');
+                print('Data: ${snapshot.data}');
+
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const SliverToBoxAdapter(
                     child: Center(
@@ -88,9 +108,49 @@ class _SavedPageState extends State<SavedPage> {
                     child: Center(
                       child: Padding(
                         padding: const EdgeInsets.all(40.0),
-                        child: Text(
-                          'Error loading favorites',
-                          style: TextStyle(color: Colors.grey[500]),
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: 60,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Error loading favorites',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${snapshot.error}',
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {}); // Retry
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                              ),
+                              child: const Text(
+                                'Retry',
+                                style: TextStyle(color: Colors.black),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -201,7 +261,7 @@ class _SavedPageState extends State<SavedPage> {
     final imageUrl = movie['primaryImage'];
     final rating = movie['averageRating']?.toString() ?? 'N/A';
     final genres = movie['genres'] as List<dynamic>?;
-    final movieId = movie['id'] ?? movie['primaryTitle'] ?? '';
+    final movieId = movie['movieId'] ?? movie['id'] ?? movie['primaryTitle'] ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -387,16 +447,29 @@ class _SavedPageState extends State<SavedPage> {
                       ),
                       child: IconButton(
                         onPressed: () async {
-                          await _favoritesService.removeFromFavorites(movieId);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('$title removed from list'),
-                                backgroundColor: Colors.grey[850],
-                                behavior: SnackBarBehavior.floating,
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
+                          try {
+                            await _favoritesService.removeFromFavorites(movieId);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('$title removed from list'),
+                                  backgroundColor: Colors.grey[850],
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error removing movie: $e'),
+                                  backgroundColor: Colors.red[900],
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
                           }
                         },
                         icon: const Icon(Icons.close, color: Colors.white, size: 20),

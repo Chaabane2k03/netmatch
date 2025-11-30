@@ -46,6 +46,8 @@ dependencies:
   firebase_storage: ^11.5.4
   image_picker_web: ^3.0.2
   url_launcher: ^6.2.1
+  shared_preferences: ^2.2.2
+  flutter_card_swiper: ^7.2.0
 
 
 dev_dependencies:
