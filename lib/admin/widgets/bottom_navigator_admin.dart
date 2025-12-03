@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:netmatch/profile/edit_profile.dart';
 
+import '../movies/crudmovies.dart';
 import '../movies/movies_management.dart';
 import '../user/user_management.dart';
 
@@ -18,6 +19,7 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
   final List<Widget> _pages = [
     const UsersPage(),
     const MoviesPage(),
+    ManageMoviesPage(),
     const MyAccountPage(),
   ];
 
@@ -32,16 +34,20 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
     return Scaffold(
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
+        items: <BottomNavigationBarItem>[
+          const BottomNavigationBarItem(
             icon: Icon(Icons.people),
             label: 'Users',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.movie),
-            label: 'Movies',
+            label: 'Dashboard',
           ),
           BottomNavigationBarItem(
+            icon: Image.asset("assets/logos/logo.png" , height:50 , width:50),
+            label:"Movies"
+          ),
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
