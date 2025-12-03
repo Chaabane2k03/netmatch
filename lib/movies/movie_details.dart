@@ -220,12 +220,53 @@ class _MovieDetailsState extends State<MovieDetails> {
     movieData['numVotes'] ??= 0;
     movieData['interests'] ??= [];
     movieData['trailer'] ??= '';
-    movieData['cast'] ??= [];
-    movieData['directors'] ??= [];
-    movieData['writers'] ??= [];
+
+    // Ensure these fields are always lists
+    if (movieData['cast'] is! List) {
+      movieData['cast'] = [];
+    }
+
+    if (movieData['directors'] is! List) {
+      movieData['directors'] = [];
+    }
+
+    if (movieData['writers'] is! List) {
+      movieData['writers'] = [];
+    }
+
     movieData['productionCompanies'] ??= [];
     movieData['filmingLocations'] ??= [];
     movieData['externalLinks'] ??= [];
+  }
+
+  // Helper method to safely filter lists
+  List<Map<String, dynamic>> _safeFilterList(
+      dynamic data,
+      bool Function(Map<String, dynamic>) predicate,
+      ) {
+    if (data == null) return [];
+
+    // If not a list, return empty list
+    if (data is! List) {
+      print('Warning: Expected List but got ${data.runtimeType}');
+      return [];
+    }
+
+    final List<Map<String, dynamic>> result = [];
+    for (var item in data) {
+      // Check if item is a Map
+      if (item is Map<String, dynamic> || item is Map) {
+        // Convert to Map<String, dynamic> if necessary
+        final Map<String, dynamic> itemMap = item is Map<String, dynamic>
+            ? item
+            : Map<String, dynamic>.from(item);
+
+        if (predicate(itemMap)) {
+          result.add(itemMap);
+        }
+      }
+    }
+    return result;
   }
 
   Future<void> _launchTrailer(String url) async {
@@ -273,59 +314,59 @@ class _MovieDetailsState extends State<MovieDetails> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Row(
-        children: [
-          Container(
-            height: 24,
-            width: 4,
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(2),
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Row(
+          children: [
+            Container(
+              height: 24,
+              width: 4,
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        )
     );
   }
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
+        padding: const EdgeInsets.symmetric(vertical: 6.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 120,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: Text(
-              value.isEmpty ? "N/A" : value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
+            Expanded(
+              child: Text(
+                value.isEmpty ? "N/A" : value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        )
     );
   }
 
@@ -913,26 +954,43 @@ class _MovieDetailsState extends State<MovieDetails> {
     final productionCompanies = movie!['productionCompanies'] ?? [];
     final externalLinks = movie!['externalLinks'] ?? [];
 
-    final directors = (movie!['directors'] ?? [])
-        .where((person) => person['job']?.toString().toLowerCase() == 'director')
-        .toList();
-    final writers = (movie!['writers'] ?? [])
-        .where((person) => person['job']?.toString().toLowerCase() == 'writer')
-        .toList();
-    final cast = (movie!['cast'] ?? [])
-        .where((person) =>
-    person['job']?.toString().toLowerCase() == 'actor' ||
-        person['job']?.toString().toLowerCase() == 'actress')
-        .toList();
-    final crew = (movie!['cast'] ?? []).where((person) {
-      final job = person['job']?.toString().toLowerCase() ?? '';
-      return job == 'producer' ||
-          job == 'composer' ||
-          job == 'cinematographer' ||
-          job == 'editor' ||
-          job == 'production_designer' ||
-          job == 'casting_director';
-    }).toList();
+    // Use safe filter method instead of .where()
+    final directors = _safeFilterList(
+      movie!['directors'],
+          (person) {
+        final job = (person['job'] ?? '').toString().toLowerCase();
+        return job == 'director';
+      },
+    );
+
+    final writers = _safeFilterList(
+      movie!['writers'],
+          (person) {
+        final job = (person['job'] ?? '').toString().toLowerCase();
+        return job == 'writer';
+      },
+    );
+
+    final cast = _safeFilterList(
+      movie!['cast'],
+          (person) {
+        final job = (person['job'] ?? '').toString().toLowerCase();
+        return job == 'actor' || job == 'actress';
+      },
+    );
+
+    final crew = _safeFilterList(
+      movie!['cast'],
+          (person) {
+        final job = (person['job'] ?? '').toString().toLowerCase();
+        return job == 'producer' ||
+            job == 'composer' ||
+            job == 'cinematographer' ||
+            job == 'editor' ||
+            job == 'production_designer' ||
+            job == 'casting_director';
+      },
+    );
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -1181,9 +1239,9 @@ class _MovieDetailsState extends State<MovieDetails> {
                   if (productionCompanies.isNotEmpty) ...[
                     _buildSectionTitle('Production Companies'),
                     _buildChipList(
-                      productionCompanies
-                          .map((company) => company['name']?.toString() ?? '')
-                          .where((name) => name.isNotEmpty)
+                      (productionCompanies as List)
+                          .map<String>((company) => company['name']?.toString() ?? '')
+                          .where((String name) => name.isNotEmpty)
                           .toList(),
                     ),
                     const SizedBox(height: 24),
