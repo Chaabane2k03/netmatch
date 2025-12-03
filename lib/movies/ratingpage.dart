@@ -23,7 +23,7 @@ class _RatingPageState extends State<RatingPage> {
     final response = await http.get(
       url,
       headers: {
-        "x-rapidapi-key": "15eac98273msh04a9da2a56942f2p17dcc2jsn41c6c8689c66",
+        "x-rapidapi-key": "30da5f7584mshaa399720f74916ep1f44b6jsn5a241833e23a",
         "x-rapidapi-host": "imdb236.p.rapidapi.com",
       },
     );

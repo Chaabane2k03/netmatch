@@ -16,7 +16,7 @@ class _MoviesPageState extends State<MoviesPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // IMDb API Configuration
-  final String _imdbApiKey = '15eac98273msh04a9da2a56942f2p17dcc2jsn41c6c8689c66';
+  final String _imdbApiKey = '30da5f7584mshaa399720f74916ep1f44b6jsn5a241833e23a';
   final String _imdbHost = 'imdb236.p.rapidapi.com';
 
   // Statistics

@@ -21,7 +21,7 @@ class _MovieDetailsState extends State<MovieDetails> {
   bool loading = true;
   bool error = false;
   Uint8List? _decodedImageBytes; // Store decoded Base64 image
-  final String apiKey = "15eac98273msh04a9da2a56942f2p17dcc2jsn41c6c8689c66";
+  final String apiKey = "30da5f7584mshaa399720f74916ep1f44b6jsn5a241833e23a";
   final String apiHost = "imdb236.p.rapidapi.com";
 
   @override
