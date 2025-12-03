@@ -999,7 +999,7 @@ class _MovieDetailsState extends State<MovieDetails> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Custom Movie - Added by Community',
+                              'Our Pick - By community demand',
                               style: TextStyle(
                                 color: Colors.red[100],
                                 fontSize: 14,

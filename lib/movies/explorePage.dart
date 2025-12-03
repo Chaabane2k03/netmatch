@@ -770,10 +770,10 @@ class _ExplorePageState extends State<ExplorePage> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.cloud_upload, color: Colors.white, size: 12),
+                        Icon(Icons.diamond, color: Colors.white, size: 12),
                         SizedBox(width: 4),
                         Text(
-                          'Custom',
+                          'Our Pick',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 10,
