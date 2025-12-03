@@ -183,11 +183,7 @@ class _LoginPageState extends State<LoginPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Logo or App Name
-                  const Icon(
-                    Icons.movie_creation_rounded,
-                    size: 80,
-                    color: Color(0xFFE50914),
-                  ),
+                  Image.asset("assets/logos/logo.png" , height: 120, width : 120),
                   const SizedBox(height: 16),
                   const Text(
                     'Welcome Back',

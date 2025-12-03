@@ -261,10 +261,10 @@ class _HomePageState extends State<HomePage> {
                 elevation: 0,
                 title: Row(
                   children: [
-                    Icon(Icons.play_arrow, color: Colors.red, size: 28),
+                    Image.asset("assets/logos/logo.png" , height:70 , width:70),
                     const SizedBox(width: 8),
                     const Text(
-                      'NetMatch',
+                      'Welcome !',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
