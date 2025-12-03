@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:netmatch/movies/matchingPage.dart';
+import 'package:netmatch/movies/movie_details.dart';
 import 'package:netmatch/services/favorites_service.dart';
 
 class SavedPage extends StatefulWidget {
@@ -41,6 +42,21 @@ class _SavedPageState extends State<SavedPage> {
         (!imageStr.startsWith('http') && imageStr.length > 100);
   }
 
+  // Vérifier si le film est custom (à partir de l'image)
+  bool _isCustomMovie(dynamic movie) {
+    final imageUrl = movie['primaryImage'];
+    return _isBase64Image(imageUrl);
+  }
+
+  // Obtenir l'ID du film
+  String _getMovieId(dynamic movie) {
+    return movie['movieId'] ??
+        movie['id'] ??
+        movie['tconst'] ??
+        movie['primaryTitle'] ??
+        '';
+  }
+
   // Décoder l'image Base64
   Uint8List? _decodeBase64Image(String? imageData, String movieId) {
     if (imageData == null || imageData.isEmpty) return null;
@@ -76,8 +92,8 @@ class _SavedPageState extends State<SavedPage> {
   // Construire le widget d'image selon le type
   Widget _buildMovieImage(dynamic movie) {
     final imageUrl = movie['primaryImage'];
-    final movieId = movie['movieId'] ?? movie['id'] ?? movie['primaryTitle'] ?? '';
-    final String movieIdStr = movieId.toString();
+    final movieId = _getMovieId(movie);
+    final String movieIdStr = movieId;
 
     // Vérifier si l'image est en Base64
     if (imageUrl != null && _isBase64Image(imageUrl)) {
@@ -153,6 +169,27 @@ class _SavedPageState extends State<SavedPage> {
           Icons.movie,
           color: Colors.grey,
           size: 40,
+        ),
+      ),
+    );
+  }
+
+  // Naviguer vers la page des détails du film
+  void _navigateToMovieDetails(BuildContext context, Map<String, dynamic> movie) {
+    final movieId = _getMovieId(movie);
+    final isCustom = _isCustomMovie(movie);
+
+    print('Navigating to movie details:');
+    print('  Movie ID: $movieId');
+    print('  Is Custom: $isCustom');
+    print('  Title: ${movie['primaryTitle'] ?? movie['originalTitle']}');
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MovieDetails(
+          movieId: movieId,
+          isCustomMovie: isCustom,
         ),
       ),
     );
@@ -344,7 +381,11 @@ class _SavedPageState extends State<SavedPage> {
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: savedMovies.length,
                           itemBuilder: (context, index) {
-                            return _buildSavedMovieCard(savedMovies[index]);
+                            final movie = savedMovies[index];
+                            return GestureDetector(
+                              onTap: () => _navigateToMovieDetails(context, movie),
+                              child: _buildSavedMovieCard(movie),
+                            );
                           },
                         ),
                       ),
@@ -400,10 +441,14 @@ class _SavedPageState extends State<SavedPage> {
         : '';
     final rating = movie['averageRating']?.toString() ?? 'N/A';
     final genres = movie['genres'] as List<dynamic>?;
-    final movieId = movie['movieId'] ?? movie['id'] ?? movie['primaryTitle'] ?? '';
+    final isCustom = _isCustomMovie(movie);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.transparent,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -444,6 +489,35 @@ class _SavedPageState extends State<SavedPage> {
                   ),
                 ),
               ),
+
+              // Custom badge
+              if (isCustom)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.diamond, color: Colors.white, size: 12),
+                        SizedBox(width: 4),
+                        Text(
+                          'Our Pick',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
 
@@ -561,7 +635,8 @@ class _SavedPageState extends State<SavedPage> {
                       child: IconButton(
                         onPressed: () async {
                           try {
-                            await _favoritesService.removeFromFavorites(movieId.toString());
+                            final movieId = _getMovieId(movie);
+                            await _favoritesService.removeFromFavorites(movieId);
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
