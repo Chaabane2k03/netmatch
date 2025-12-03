@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:netmatch/movies/matchingPage.dart';
 import 'package:netmatch/services/favorites_service.dart';
@@ -13,12 +15,148 @@ class _SavedPageState extends State<SavedPage> {
   final FavoritesService _favoritesService = FavoritesService();
   String selectedCategory = 'All';
 
+  // Cache pour les images Base64 décodées
+  final Map<String, Uint8List> _decodedImageCache = {};
+
   final List<String> categories = [
     'All',
     'Movies',
     'TV Shows',
     'Watchlist',
   ];
+
+  @override
+  void dispose() {
+    _decodedImageCache.clear();
+    super.dispose();
+  }
+
+  // Vérifier si l'image est en Base64
+  bool _isBase64Image(dynamic imageData) {
+    if (imageData == null) return false;
+    String imageStr = imageData.toString();
+
+    // Vérifier le préfixe data:image ou si c'est une longue chaîne sans http
+    return imageStr.startsWith('data:image') ||
+        (!imageStr.startsWith('http') && imageStr.length > 100);
+  }
+
+  // Décoder l'image Base64
+  Uint8List? _decodeBase64Image(String? imageData, String movieId) {
+    if (imageData == null || imageData.isEmpty) return null;
+
+    // Vérifier d'abord le cache
+    if (_decodedImageCache.containsKey(movieId)) {
+      return _decodedImageCache[movieId];
+    }
+
+    try {
+      String base64String = imageData;
+
+      // Supprimer le préfixe data URI s'il est présent
+      if (base64String.contains(',')) {
+        base64String = base64String.split(',').last;
+      }
+
+      // Supprimer les espaces et nouvelles lignes
+      base64String = base64String.replaceAll(RegExp(r'\s'), '');
+
+      final decodedBytes = base64Decode(base64String);
+
+      // Mettre en cache l'image décodée
+      _decodedImageCache[movieId] = decodedBytes;
+
+      return decodedBytes;
+    } catch (e) {
+      print('Error decoding Base64 image for movie $movieId: $e');
+      return null;
+    }
+  }
+
+  // Construire le widget d'image selon le type
+  Widget _buildMovieImage(dynamic movie) {
+    final imageUrl = movie['primaryImage'];
+    final movieId = movie['movieId'] ?? movie['id'] ?? movie['primaryTitle'] ?? '';
+    final String movieIdStr = movieId.toString();
+
+    // Vérifier si l'image est en Base64
+    if (imageUrl != null && _isBase64Image(imageUrl)) {
+      final decodedBytes = _decodeBase64Image(imageUrl.toString(), movieIdStr);
+
+      if (decodedBytes != null) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            decodedBytes,
+            width: 120,
+            height: 180,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildPlaceholderImage();
+            },
+          ),
+        );
+      }
+    }
+
+    // Pour les images URL normales
+    if (imageUrl != null && imageUrl.toString().isNotEmpty && !_isBase64Image(imageUrl)) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          imageUrl.toString(),
+          width: 120,
+          height: 180,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildPlaceholderImage();
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              width: 120,
+              height: 180,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.grey[900],
+              ),
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                      : null,
+                  color: Colors.red,
+                  strokeWidth: 2,
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    // Image de secours
+    return _buildPlaceholderImage();
+  }
+
+  Widget _buildPlaceholderImage() {
+    return Container(
+      width: 120,
+      height: 180,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey[900],
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.movie,
+          color: Colors.grey,
+          size: 40,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -257,8 +395,9 @@ class _SavedPageState extends State<SavedPage> {
 
   Widget _buildSavedMovieCard(Map<String, dynamic> movie) {
     final title = movie['primaryTitle'] ?? movie['originalTitle'] ?? 'Unknown';
-    final year = movie['releaseDate']?.substring(0, 4) ?? '';
-    final imageUrl = movie['primaryImage'];
+    final year = movie['releaseDate']!.toString().length >= 4
+        ? movie['releaseDate'].toString().substring(0, 4)
+        : '';
     final rating = movie['averageRating']?.toString() ?? 'N/A';
     final genres = movie['genres'] as List<dynamic>?;
     final movieId = movie['movieId'] ?? movie['id'] ?? movie['primaryTitle'] ?? '';
@@ -268,38 +407,12 @@ class _SavedPageState extends State<SavedPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Movie Poster
+          // Movie Poster avec gestion Base64/URL
           Stack(
             children: [
-              Container(
-                width: 120,
-                height: 180,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey[900],
-                ),
-                child: imageUrl != null
-                    ? ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    imageUrl,
-                    width: 120,
-                    height: 180,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[900],
-                        child: const Center(
-                          child: Icon(Icons.movie, color: Colors.grey, size: 40),
-                        ),
-                      );
-                    },
-                  ),
-                )
-                    : Center(
-                  child: Icon(Icons.movie, color: Colors.grey[700], size: 40),
-                ),
-              ),
+              // Utiliser la nouvelle méthode _buildMovieImage
+              _buildMovieImage(movie),
+
               // Play Button Overlay
               Positioned.fill(
                 child: Container(
@@ -448,7 +561,7 @@ class _SavedPageState extends State<SavedPage> {
                       child: IconButton(
                         onPressed: () async {
                           try {
-                            await _favoritesService.removeFromFavorites(movieId);
+                            await _favoritesService.removeFromFavorites(movieId.toString());
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(

@@ -1002,24 +1002,24 @@ class _MovieDetailsState extends State<MovieDetails> {
             floating: false,
             pinned: true,
             actions: [
-              if (!isCustom)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: FavoriteButton(
-                    movie: {
-                      'id': widget.movieId,
-                      'primaryTitle': movie!['primaryTitle'] ?? movie!['title'] ?? 'No Title',
-                      'originalTitle': movie!['originalTitle'],
-                      'releaseDate': movie!['releaseDate'],
-                      'primaryImage': movie!['primaryImage'],
-                      'averageRating': movie!['averageRating'],
-                      'genres': movie!['genres'] ?? [],
-                    },
-                    size: 28,
-                    activeColor: Colors.red,
-                    inactiveColor: Colors.white,
-                  ),
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: FavoriteButton(
+                  movie: {
+                    'id': widget.movieId,
+                    'primaryTitle': movie!['primaryTitle'] ?? movie!['title'] ?? 'No Title',
+                    'originalTitle': movie!['originalTitle'],
+                    'releaseDate': movie!['releaseDate'],
+                    'primaryImage': movie!['primaryImage'],
+                    'averageRating': movie!['averageRating'],
+                    'genres': movie!['genres'] ?? [],
+                    'isCustom': isCustom, // <CHANGE> Added isCustom flag so FavoriteButton knows the movie type
+                  },
+                  size: 28,
+                  activeColor: Colors.red,
+                  inactiveColor: Colors.white,
                 ),
+              ),
             ],
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
