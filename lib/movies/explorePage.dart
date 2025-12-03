@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:netmatch/movies/movie_details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({Key? key}) : super(key: key);
@@ -19,10 +21,13 @@ class _ExplorePageState extends State<ExplorePage> {
   String selectedGenre = 'All';
   String selectedSort = 'Popular';
 
+  // Cache for decoded Base64 images
+  final Map<String, Uint8List> _decodedImageCache = {};
+
   // Cache configuration
   static const String CACHE_KEY_MOVIES = 'explore_movies_cache';
   static const String CACHE_KEY_TIMESTAMP = 'explore_movies_timestamp';
-  static const Duration CACHE_DURATION = Duration(hours: 6); // Cache for 6 hours
+  static const Duration CACHE_DURATION = Duration(hours: 6);
 
   final List<String> genres = [
     'All',
@@ -51,10 +56,50 @@ class _ExplorePageState extends State<ExplorePage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _decodedImageCache.clear();
     super.dispose();
   }
 
-  // Check if cache is still valid
+  // Check if the image is a Base64 string
+  bool _isBase64Image(dynamic imageData) {
+    if (imageData == null) return false;
+    String imageStr = imageData.toString();
+    return imageStr.startsWith('data:image') ||
+        (!imageStr.startsWith('http') && imageStr.length > 100);
+  }
+
+  // Decode Base64 image string to bytes
+  Uint8List? _decodeBase64Image(String? imageData, String movieId) {
+    if (imageData == null || imageData.isEmpty) return null;
+
+    // Check cache first
+    if (_decodedImageCache.containsKey(movieId)) {
+      return _decodedImageCache[movieId];
+    }
+
+    try {
+      String base64String = imageData;
+
+      // Remove data URI prefix if present (e.g., "data:image/png;base64,")
+      if (base64String.contains(',')) {
+        base64String = base64String.split(',').last;
+      }
+
+      // Remove any whitespace or newlines
+      base64String = base64String.replaceAll(RegExp(r'\s'), '');
+
+      final decodedBytes = base64Decode(base64String);
+
+      // Cache the decoded image
+      _decodedImageCache[movieId] = decodedBytes;
+
+      return decodedBytes;
+    } catch (e) {
+      print('Error decoding Base64 image for movie $movieId: $e');
+      return null;
+    }
+  }
+
   Future<bool> _isCacheValid() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -72,7 +117,6 @@ class _ExplorePageState extends State<ExplorePage> {
     }
   }
 
-  // Load movies from cache
   Future<List<dynamic>?> _loadFromCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -80,7 +124,6 @@ class _ExplorePageState extends State<ExplorePage> {
 
       if (cachedData != null) {
         final List<dynamic> movies = json.decode(cachedData);
-        print('✅ Loaded ${movies.length} movies from cache');
         return movies;
       }
     } catch (e) {
@@ -89,7 +132,6 @@ class _ExplorePageState extends State<ExplorePage> {
     return null;
   }
 
-  // Save movies to cache
   Future<void> _saveToCache(List<dynamic> movies) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -98,21 +140,48 @@ class _ExplorePageState extends State<ExplorePage> {
       await prefs.setString(CACHE_KEY_MOVIES, jsonData);
       await prefs.setInt(CACHE_KEY_TIMESTAMP, DateTime.now().millisecondsSinceEpoch);
 
-      print('✅ Saved ${movies.length} movies to cache');
     } catch (e) {
       print('Error saving to cache: $e');
     }
   }
 
-  // Clear cache (useful for refresh)
   Future<void> _clearCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(CACHE_KEY_MOVIES);
       await prefs.remove(CACHE_KEY_TIMESTAMP);
-      print('✅ Cache cleared');
     } catch (e) {
       print('Error clearing cache: $e');
+    }
+  }
+
+  // Fetch custom movies from Firestore
+  Future<List<Map<String, dynamic>>> fetchFirestoreMovies() async {
+    try {
+      final QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('movies')
+          .get();
+
+      List<Map<String, dynamic>> firestoreMovies = [];
+
+      for (var doc in snapshot.docs) {
+        Map<String, dynamic> movieData = doc.data() as Map<String, dynamic>;
+
+        // Add document ID and mark as custom movie
+        movieData['id'] = doc.id;
+        movieData['isCustom'] = true;
+
+        // Normalize the data structure to match IMDB format
+        if (!movieData.containsKey('primaryTitle') && movieData.containsKey('originalTitle')) {
+          movieData['primaryTitle'] = movieData['originalTitle'];
+        }
+
+        firestoreMovies.add(movieData);
+      }
+      return firestoreMovies;
+    } catch (e) {
+      print('Error fetching Firestore movies: $e');
+      return [];
     }
   }
 
@@ -129,19 +198,31 @@ class _ExplorePageState extends State<ExplorePage> {
           final cachedMovies = await _loadFromCache();
 
           if (cachedMovies != null && cachedMovies.isNotEmpty) {
+            // Still fetch Firestore movies even with cache
+            final firestoreMovies = await fetchFirestoreMovies();
+
             setState(() {
-              allMovies = cachedMovies;
+              allMovies = [...firestoreMovies, ...cachedMovies];
               filteredMovies = allMovies;
               isLoading = false;
             });
-            return; // Use cached data, no API call needed!
+            return;
           }
         }
       }
 
-      // If no valid cache or force refresh, fetch from API
-      print('🌐 Fetching movies from API...');
+      // Clear image cache on force refresh
+      if (forceRefresh) {
+        _decodedImageCache.clear();
+      }
 
+      // Fetch from both sources
+      print('Fetching movies from API and Firestore...');
+
+      // Fetch Firestore movies
+      final firestoreMovies = await fetchFirestoreMovies();
+
+      // Fetch IMDB movies
       final popularResponse = await http.get(
         Uri.parse('https://$apiHost/api/imdb/most-popular-movies'),
         headers: {
@@ -162,43 +243,53 @@ class _ExplorePageState extends State<ExplorePage> {
         final popularData = json.decode(popularResponse.body);
         final topRatedData = json.decode(topRatedResponse.body);
 
-        // Combine and remove duplicates
+        // Combine IMDB movies and remove duplicates
         List<dynamic> combined = [...popularData, ...topRatedData];
         Map<String, dynamic> uniqueMovies = {};
 
         for (var movie in combined) {
           String id = movie['id'] ?? movie['primaryTitle'] ?? '';
           if (id.isNotEmpty && !uniqueMovies.containsKey(id)) {
+            movie['isCustom'] = false;
             uniqueMovies[id] = movie;
           }
         }
 
-        final moviesList = uniqueMovies.values.toList();
+        final imdbMovies = uniqueMovies.values.toList();
 
-        // Save to cache
-        await _saveToCache(moviesList);
+        // Combine Firestore movies with IMDB movies (Firestore first)
+        final allMoviesList = [...firestoreMovies, ...imdbMovies];
+
+        // Save only IMDB movies to cache (Firestore is always fresh)
+        await _saveToCache(imdbMovies);
 
         setState(() {
-          allMovies = moviesList;
+          allMovies = allMoviesList;
           filteredMovies = allMovies;
           isLoading = false;
         });
       } else {
-        setState(() => isLoading = false);
+        // Even if API fails, show Firestore movies
+        setState(() {
+          allMovies = firestoreMovies;
+          filteredMovies = allMovies;
+          isLoading = false;
+        });
       }
     } catch (e) {
       print('Error fetching movies: $e');
 
-      // Try to load from cache as fallback
+      // Try to load from cache and Firestore as fallback
       final cachedMovies = await _loadFromCache();
-      if (cachedMovies != null && cachedMovies.isNotEmpty) {
+      final firestoreMovies = await fetchFirestoreMovies();
+
+      if ((cachedMovies != null && cachedMovies.isNotEmpty) || firestoreMovies.isNotEmpty) {
         setState(() {
-          allMovies = cachedMovies;
+          allMovies = [...firestoreMovies, ...(cachedMovies ?? [])];
           filteredMovies = allMovies;
           isLoading = false;
         });
 
-        // Show snackbar that we're using cached data
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -239,11 +330,9 @@ class _ExplorePageState extends State<ExplorePage> {
               for (var genre in genres) {
                 String genreName = '';
 
-                // Safely extract the genre name
                 if (genre is String) {
                   genreName = genre.toLowerCase();
                 } else {
-                  // It's some kind of object, convert to string
                   genreName = genre.toString().toLowerCase();
                 }
 
@@ -291,6 +380,89 @@ class _ExplorePageState extends State<ExplorePage> {
     });
   }
 
+  // Build movie image widget that handles both URL and Base64
+  Widget _buildMovieImage(dynamic movie) {
+    final imageUrl = movie['primaryImage'];
+    final isCustom = movie['isCustom'] ?? false;
+    final movieId = movie['id']?.toString() ?? '';
+
+    // For custom movies, check if image is Base64
+    if (isCustom && imageUrl != null && _isBase64Image(imageUrl)) {
+      final decodedBytes = _decodeBase64Image(imageUrl.toString(), movieId);
+
+      if (decodedBytes != null) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            decodedBytes,
+            height: 240,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildPlaceholderImage();
+            },
+          ),
+        );
+      }
+    }
+
+    // For regular movies with URL
+    if (imageUrl != null && imageUrl.toString().isNotEmpty && !_isBase64Image(imageUrl)) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          imageUrl.toString(),
+          height: 240,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildPlaceholderImage();
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              height: 240,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.grey[900],
+              ),
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                      : null,
+                  color: Colors.red,
+                  strokeWidth: 2,
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    // Fallback placeholder
+    return _buildPlaceholderImage();
+  }
+
+  Widget _buildPlaceholderImage() {
+    return Container(
+      height: 240,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey[900],
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.movie,
+          color: Colors.grey,
+          size: 50,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -319,7 +491,6 @@ class _ExplorePageState extends State<ExplorePage> {
                     padding: const EdgeInsets.fromLTRB(20, 60, 20, 10),
                     child: Column(
                       children: [
-                        // Search Bar
                         Container(
                           height: 50,
                           decoration: BoxDecoration(
@@ -346,10 +517,11 @@ class _ExplorePageState extends State<ExplorePage> {
                               )
                                   : null,
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                              contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                             ),
                             onChanged: (value) {
-                              setState(() {}); // Trigger rebuild for suffixIcon
+                              setState(() {});
                               _filterMovies();
                             },
                           ),
@@ -370,7 +542,6 @@ class _ExplorePageState extends State<ExplorePage> {
                   ),
                 ),
                 actions: [
-                  // Refresh button
                   IconButton(
                     icon: const Icon(Icons.refresh, color: Colors.red),
                     onPressed: () async {
@@ -445,7 +616,7 @@ class _ExplorePageState extends State<ExplorePage> {
                     : SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.58,
+                    childAspectRatio: 0.55,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 20,
                   ),
@@ -533,16 +704,21 @@ class _ExplorePageState extends State<ExplorePage> {
 
   Widget _buildMovieGridItem(dynamic movie) {
     final title = movie['primaryTitle'] ?? movie['originalTitle'] ?? 'Unknown';
-    final year = movie['releaseDate']?.substring(0, 4) ?? '';
-    final imageUrl = movie['primaryImage'];
+    final year = movie['releaseDate']!.toString().length >= 4
+        ? movie['releaseDate'].toString().substring(0, 4)
+        : '';
     final rating = movie['averageRating']?.toString() ?? 'N/A';
+    final isCustom = movie['isCustom'] ?? false;
 
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => MovieDetails(movieId: movie['id'] ?? movie['tconst']),
+            builder: (context) => MovieDetails(
+              movieId: movie['id'] ?? movie['tconst'],
+              isCustomMovie: isCustom,
+            ),
           ),
         );
       },
@@ -551,56 +727,56 @@ class _ExplorePageState extends State<ExplorePage> {
         children: [
           Stack(
             children: [
-              Container(
-                height: 240,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey[900],
-                ),
-                child: imageUrl != null
-                    ? ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    height: 240,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[900],
-                        child: const Center(
-                          child: Icon(Icons.movie, color: Colors.grey, size: 50),
-                        ),
-                      );
-                    },
+              // Use the new _buildMovieImage method that handles Base64
+              _buildMovieImage(movie),
+              // Rating badge
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                )
-                    : Center(
-                  child: Icon(Icons.movie, color: Colors.grey[700], size: 50),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.star, color: Colors.amber, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        rating,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-
-              // ⭐ Rating badge
-              if (rating != 'N/A')
+              // Custom movie badge
+              if (isCustom)
                 Positioned(
                   top: 8,
-                  right: 8,
+                  left: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.red.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star, color: Colors.red, size: 14),
-                        const SizedBox(width: 4),
+                        Icon(Icons.cloud_upload, color: Colors.white, size: 12),
+                        SizedBox(width: 4),
                         Text(
-                          rating,
-                          style: const TextStyle(
+                          'Custom',
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -608,49 +784,27 @@ class _ExplorePageState extends State<ExplorePage> {
                     ),
                   ),
                 ),
-
-              // 🔖 Bookmark icon
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.bookmark_border,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
-              ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          // Movie Title
+          const SizedBox(height: 10),
           Text(
             title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
-
-          // Year
-          if (year.isNotEmpty)
-            Text(
-              year,
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 12,
-              ),
+          const SizedBox(height: 4),
+          Text(
+            year,
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 12,
             ),
+          ),
         ],
       ),
     );
