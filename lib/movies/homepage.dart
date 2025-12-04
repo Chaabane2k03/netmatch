@@ -247,7 +247,7 @@ class _HomePageState extends State<HomePage> {
       case 0:
         return RefreshIndicator(
           color: Colors.red,
-          backgroundColor: const Color(0xFF1A1A1A),
+          backgroundColor: Colors.black,
           onRefresh: () async {
             await fetchMovies(forceRefresh: true);
           },
@@ -257,7 +257,7 @@ class _HomePageState extends State<HomePage> {
               SliverAppBar(
                 automaticallyImplyLeading: false,
                 floating: true,
-                backgroundColor: const Color(0xFF0F0F0F),
+                backgroundColor: Colors.black,
                 elevation: 0,
                 title: Row(
                   children: [
@@ -276,14 +276,6 @@ class _HomePageState extends State<HomePage> {
                 ),
                 actions: [
                   IconButton(
-                    icon: const Icon(Icons.search, size: 28),
-                    onPressed: () {},
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined, size: 28),
-                    onPressed: () {},
-                  ),
-                  IconButton(
                     icon: const Icon(Icons.refresh, color: Colors.red, size: 28),
                     onPressed: () async {
                       setState(() => isLoading = true);
@@ -292,24 +284,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(width: 8),
                 ],
-              ),
-
-              // Tab Bar
-              SliverToBoxAdapter(
-                child: Container(
-                  height: 50,
-                  margin: const EdgeInsets.symmetric(vertical: 16),
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    children: [
-                      _buildTab('Featured', 0),
-                      _buildTab('Movies', 1),
-                      _buildTab('TV Shows', 2),
-                      _buildTab('Trending', 3),
-                    ],
-                  ),
-                ),
               ),
 
               // Featured Banner
@@ -342,44 +316,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // Trending Now
-              /*SliverToBoxAdapter(
-                child: _buildSectionTitle('Trending Now'),
-              ),
 
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 260,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: trendingMovies.length,
-                    itemBuilder: (context, index) {
-                      return _buildMovieCard(trendingMovies[index]);
-                    },
-                  ),
-                ),
-              ),*/
 
-              // Top Rated
-
-              /*SliverToBoxAdapter(
-                child: _buildSectionTitle('Top Rated'),
-              ),
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 260,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: topRatedMovies.length,
-                    itemBuilder: (context, index) {
-                      return _buildMovieCard(topRatedMovies[index]);
-                    },
-                  ),
-                ),
-              ),
-              */
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
@@ -399,6 +337,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator(color: Colors.red))
@@ -502,7 +441,20 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+
+                    print('Watch Now clicked!');
+                    print('Movie ID: ${movie['id']}');
+                    print('Movie tconst: ${movie['tconst']}');
+                    print('Full movie data: $movie');
+                    Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MovieDetails(
+                        movieId: movie['id'] ?? movie['tconst'],
+                      ),
+                    ),
+                  );},
                   icon: const Icon(Icons.play_arrow, color: Colors.black),
                   label: const Text(
                     'Watch Now',
@@ -538,7 +490,11 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: () {
+              setState(() {
+                botIndex = 1;
+              });
+            },
             child: const Text('See all', style: TextStyle(color: Colors.red)),
           ),
         ],
